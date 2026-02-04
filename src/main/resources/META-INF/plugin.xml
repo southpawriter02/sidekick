@@ -179,6 +179,13 @@ The IntelliJ Platform uses this file to:
         -->
         <projectService 
             serviceImplementation="com.sidekick.prompts.PromptTemplateService"/>
+        
+        <!--
+        Chat History Service (v0.2.5).
+        Persists and manages chat sessions.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.history.ChatHistoryService"/>
     </extensions>
 
     <!--

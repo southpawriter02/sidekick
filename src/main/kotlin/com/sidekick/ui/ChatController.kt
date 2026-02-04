@@ -25,6 +25,7 @@ import com.intellij.openapi.project.Project
 import com.sidekick.context.ContextBuilder
 import com.sidekick.context.EditorContextService
 import com.sidekick.context.ProjectContextService
+import com.sidekick.history.ChatHistoryService
 import com.sidekick.services.ollama.OllamaService
 import com.sidekick.services.ollama.models.ChatMessage
 import com.sidekick.services.ollama.models.ChatOptions
@@ -165,6 +166,13 @@ class ChatController(
         // Add user message to history
         messageHistory.add(ChatMessage.user(userMessage))
         
+        // Persist to chat history (v0.2.5)
+        try {
+            ChatHistoryService.getInstance(project).addUserMessage(userMessage)
+        } catch (e: Exception) {
+            LOG.debug("Failed to persist user message: ${e.message}")
+        }
+        
         // Disable input while processing
         isProcessing = true
         chatPanel.setInputEnabled(false)
@@ -254,6 +262,14 @@ class ChatController(
                         val fullResponse = responseBuilder.toString()
                         if (fullResponse.isNotEmpty()) {
                             messageHistory.add(ChatMessage.assistant(fullResponse))
+                            
+                            // Persist to chat history (v0.2.5)
+                            try {
+                                ChatHistoryService.getInstance(project)
+                                    .addAssistantMessage(fullResponse, selectedModel)
+                            } catch (e: Exception) {
+                                LOG.debug("Failed to persist assistant message: ${e.message}")
+                            }
                         }
                         chatPanel.completeAssistantMessage()
                     } else if (cause is CancellationException) {

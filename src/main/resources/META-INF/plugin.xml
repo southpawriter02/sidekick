@@ -165,18 +165,56 @@ The IntelliJ Platform uses this file to:
         -->
         <projectService 
             serviceImplementation="com.sidekick.context.ProjectContextService"/>
+        
+        <!--
+        Code Action Service (v0.2.3).
+        Manages and executes code actions.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.actions.CodeActionService"/>
     </extensions>
 
     <!--
     =========================================================================
     Actions
     =========================================================================
-    Menu items and keyboard shortcuts are registered here.
-    
-    For v0.1.0, we have no user-facing actions yet.
-    Actions will be added in v0.1.2+ when we implement the chat UI.
+    Menu items and keyboard shortcuts for Sidekick code actions.
     -->
     <actions>
-        <!-- Actions will be added in subsequent versions -->
+        <!--
+        Sidekick action group (v0.2.3).
+        Appears in the editor context menu under "Sidekick".
+        -->
+        <group id="Sidekick.ActionGroup"
+               class="com.sidekick.actions.SidekickActionGroup"
+               text="Sidekick"
+               description="Sidekick AI code actions"
+               popup="true">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </group>
+        
+        <!--
+        Quick actions with keyboard shortcuts (v0.2.3).
+        -->
+        <action id="Sidekick.Explain"
+                class="com.sidekick.actions.QuickExplainAction"
+                text="Sidekick: Explain Selection"
+                description="Explain the selected code using Sidekick">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift E"/>
+        </action>
+        
+        <action id="Sidekick.Refactor"
+                class="com.sidekick.actions.QuickRefactorAction"
+                text="Sidekick: Refactor Selection"
+                description="Suggest refactoring for the selected code">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift R"/>
+        </action>
+        
+        <action id="Sidekick.GenerateTests"
+                class="com.sidekick.actions.QuickGenerateTestsAction"
+                text="Sidekick: Generate Tests"
+                description="Generate unit tests for the selected code">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift T"/>
+        </action>
     </actions>
 </idea-plugin>

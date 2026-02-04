@@ -266,6 +266,26 @@ class ChatPanel(
     // -------------------------------------------------------------------------
     
     /**
+     * Sends a message programmatically (e.g., from code actions).
+     * 
+     * @param text The message text to send
+     */
+    fun sendMessage(text: String) {
+        if (text.isBlank()) return
+        
+        LOG.debug("Sending programmatic message: ${text.take(50)}...")
+        
+        // Clear welcome message if present
+        clearWelcomeIfNeeded()
+        
+        // Add user message bubble
+        addUserMessage(text)
+        
+        // Send to controller
+        controller.sendMessage(text)
+    }
+    
+    /**
      * Handles the send button click or Enter key press.
      */
     private fun onSendMessage() {

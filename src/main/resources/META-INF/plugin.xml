@@ -214,6 +214,13 @@ The IntelliJ Platform uses this file to:
         -->
         <projectService 
             serviceImplementation="com.sidekick.generation.naming.NamingService"/>
+        
+        <!--
+        Error Explain Service (v0.3.5).
+        Explains error messages.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.generation.errorexplain.ErrorExplainService"/>
     </extensions>
 
     <!--
@@ -343,6 +350,25 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.generation.naming.ConvertNamingConventionAction"
                 text="Sidekick: Convert Naming Convention"
                 description="Convert selected name to different convention">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Error Message Explainer (v0.3.5).
+        Explains error messages.
+        -->
+        <action id="Sidekick.ExplainError"
+                class="com.sidekick.generation.errorexplain.ExplainErrorAction"
+                text="Sidekick: Explain Error"
+                description="Explain selected error message">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift E"/>
+        </action>
+        
+        <action id="Sidekick.QuickCategorizeError"
+                class="com.sidekick.generation.errorexplain.QuickCategorizeErrorAction"
+                text="Sidekick: Categorize Error"
+                description="Quick categorize error (no LLM)">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

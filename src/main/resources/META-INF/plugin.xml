@@ -151,6 +151,20 @@ The IntelliJ Platform uses this file to:
             instance="com.sidekick.settings.SidekickConfigurable"
             id="com.sidekick.settings"
             displayName="Sidekick"/>
+        
+        <!--
+        Editor Context Service (v0.2.1).
+        Extracts context from the current editor (file, selection, cursor).
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.context.EditorContextService"/>
+        
+        <!--
+        Project Context Service (v0.2.1).
+        Analyzes project structure and detects frameworks.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.context.ProjectContextService"/>
     </extensions>
 
     <!--

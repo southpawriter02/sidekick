@@ -207,6 +207,13 @@ The IntelliJ Platform uses this file to:
         -->
         <projectService 
             serviceImplementation="com.sidekick.generation.commit.CommitGenService"/>
+        
+        <!--
+        Naming Service (v0.3.4).
+        Suggests variable names.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.generation.naming.NamingService"/>
     </extensions>
 
     <!--
@@ -309,6 +316,33 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.generation.commit.QuickCommitMessageAction"
                 text="Sidekick: Quick Commit Message"
                 description="Generate commit message without LLM">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Variable Naming Assistant (v0.3.4).
+        Suggests variable names.
+        -->
+        <action id="Sidekick.SuggestNames"
+                class="com.sidekick.generation.naming.SuggestNamesAction"
+                text="Sidekick: Suggest Names"
+                description="Suggest variable names for symbol at cursor">
+            <add-to-group group-id="RefactoringMenu"/>
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift N"/>
+        </action>
+        
+        <action id="Sidekick.QuickSuggestNames"
+                class="com.sidekick.generation.naming.QuickSuggestNamesAction"
+                text="Sidekick: Quick Name Suggestions"
+                description="Suggest names using patterns (no LLM)">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.ConvertNamingConvention"
+                class="com.sidekick.generation.naming.ConvertNamingConventionAction"
+                text="Sidekick: Convert Naming Convention"
+                description="Convert selected name to different convention">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

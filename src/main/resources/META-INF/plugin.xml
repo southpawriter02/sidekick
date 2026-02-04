@@ -221,6 +221,13 @@ The IntelliJ Platform uses this file to:
         -->
         <projectService 
             serviceImplementation="com.sidekick.generation.errorexplain.ErrorExplainService"/>
+        
+        <!--
+        DTO Gen Service (v0.3.5).
+        Generates DTOs from JSON.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.generation.dto.DtoGenService"/>
     </extensions>
 
     <!--
@@ -369,6 +376,26 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.generation.errorexplain.QuickCategorizeErrorAction"
                 text="Sidekick: Categorize Error"
                 description="Quick categorize error (no LLM)">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        DTO Generator (v0.3.5).
+        Generates DTOs from JSON.
+        -->
+        <action id="Sidekick.GenerateDto"
+                class="com.sidekick.generation.dto.GenerateDtoAction"
+                text="Sidekick: Generate DTO from JSON"
+                description="Generate DTO class from clipboard JSON">
+            <add-to-group group-id="GenerateGroup"/>
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift J"/>
+        </action>
+        
+        <action id="Sidekick.QuickGenerateDto"
+                class="com.sidekick.generation.dto.QuickGenerateDtoAction"
+                text="Sidekick: Quick Generate DTO"
+                description="Generate DTO without LLM">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

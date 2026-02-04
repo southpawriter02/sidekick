@@ -193,6 +193,20 @@ The IntelliJ Platform uses this file to:
         -->
         <projectService 
             serviceImplementation="com.sidekick.generation.docs.DocGenService"/>
+        
+        <!--
+        Test Generator Service (v0.3.2).
+        Generates unit tests for code.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.generation.tests.TestGenService"/>
+        
+        <!--
+        Commit Message Generator Service (v0.3.3).
+        Generates conventional commit messages.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.generation.commit.CommitGenService"/>
     </extensions>
 
     <!--
@@ -255,6 +269,46 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.generation.docs.GenerateDocumentationStubAction"
                 text="Sidekick: Generate Doc Stub"
                 description="Generate documentation stub without LLM">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Test Scaffolder (v0.3.2).
+        Generates unit tests for code.
+        -->
+        <action id="Sidekick.GenerateUnitTests"
+                class="com.sidekick.generation.tests.GenerateTestsAction"
+                text="Sidekick: Generate Unit Tests"
+                description="Generate unit tests for selected code">
+            <add-to-group group-id="GenerateGroup"/>
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift G"/>
+        </action>
+        
+        <action id="Sidekick.GenerateTestStub"
+                class="com.sidekick.generation.tests.GenerateTestStubAction"
+                text="Sidekick: Generate Test Stub"
+                description="Generate test stub without LLM">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Commit Message Generator (v0.3.3).
+        Generates conventional commit messages.
+        -->
+        <action id="Sidekick.GenerateCommitMessage"
+                class="com.sidekick.generation.commit.GenerateCommitMessageAction"
+                text="Sidekick: Generate Commit Message"
+                description="Generate a conventional commit message from staged changes">
+            <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift C"/>
+        </action>
+        
+        <action id="Sidekick.QuickCommitMessage"
+                class="com.sidekick.generation.commit.QuickCommitMessageAction"
+                text="Sidekick: Quick Commit Message"
+                description="Generate commit message without LLM">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

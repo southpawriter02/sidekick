@@ -1,0 +1,59 @@
+# ============================================================
+# .gitignore for Sidekick JetBrains Plugin
+# ============================================================
+# This file specifies which files and directories should be
+# excluded from version control.
+# ============================================================
+
+# ------------------------------------------------------------
+# Gradle Build Output
+# ------------------------------------------------------------
+build/
+.gradle/
+out/
+
+# ------------------------------------------------------------
+# IDE Configuration
+# ------------------------------------------------------------
+# IntelliJ IDEA project files (we don't commit IDE-specific settings)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# ------------------------------------------------------------
+# IntelliJ Platform Plugin Development
+# ------------------------------------------------------------
+# Downloaded IDE distributions (large, can be re-downloaded)
+/ideaIC/
+/ideaIU/
+/rider/
+
+# Plugin sandbox (runtime test environment)
+/build/idea-sandbox/
+
+# ------------------------------------------------------------
+# Operating System Files
+# ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ------------------------------------------------------------
+# Logs and Temp Files
+# ------------------------------------------------------------
+*.log
+*.tmp
+*.temp
+*.swp
+*~
+
+# ------------------------------------------------------------
+# Local Environment Configuration
+# ------------------------------------------------------------
+# Local overrides for gradle.properties
+local.properties
+
+# Environment-specific configuration
+.env
+.env.local

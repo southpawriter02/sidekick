@@ -1,0 +1,151 @@
+<!--
+=============================================================================
+Sidekick Plugin Descriptor
+=============================================================================
+This is the main plugin descriptor for Sidekick - a local LLM coding companion
+for JetBrains Rider. This file declares the plugin's identity, dependencies,
+and extension points.
+
+The IntelliJ Platform uses this file to:
+- Identify the plugin in the marketplace and settings
+- Determine compatibility with IDE versions
+- Register extensions, actions, and services
+=============================================================================
+-->
+<idea-plugin>
+    <!--
+    =========================================================================
+    Plugin Identity
+    =========================================================================
+    These elements identify the plugin in the JetBrains ecosystem.
+    -->
+    
+    <!-- Unique plugin identifier - must be globally unique across all plugins -->
+    <id>com.sidekick</id>
+    
+    <!-- Human-readable plugin name shown in Settings → Plugins -->
+    <name>Sidekick</name>
+    
+    <!-- Plugin vendor information -->
+    <vendor email="support@sidekick.dev" url="https://github.com/ryan/sidekick">
+        Sidekick Contributors
+    </vendor>
+
+    <!--
+    =========================================================================
+    Plugin Description
+    =========================================================================
+    This HTML description is shown in the plugin marketplace and in
+    Settings → Plugins when the plugin is selected.
+    -->
+    <description><![CDATA[
+        <h2>Sidekick - Local LLM Coding Companion</h2>
+        
+        <p>
+            Sidekick brings AI-powered code assistance directly into JetBrains Rider,
+            with a focus on <strong>privacy</strong> and <strong>local inference</strong>.
+        </p>
+        
+        <h3>Key Features</h3>
+        <ul>
+            <li><strong>Local LLM Integration:</strong> Connect to Ollama for private, 
+                on-device AI assistance - your code never leaves your machine</li>
+            <li><strong>Context-Aware Chat:</strong> Ask questions about your code with
+                automatic context injection from your current file and project</li>
+            <li><strong>Streaming Responses:</strong> See AI responses in real-time as
+                they're generated, just like ChatGPT</li>
+        </ul>
+        
+        <h3>Requirements</h3>
+        <ul>
+            <li>JetBrains Rider 2024.1 or later</li>
+            <li><a href="https://ollama.ai">Ollama</a> installed and running locally</li>
+        </ul>
+        
+        <h3>Getting Started</h3>
+        <ol>
+            <li>Install Ollama from <a href="https://ollama.ai">ollama.ai</a></li>
+            <li>Pull a model: <code>ollama pull llama3.2</code></li>
+            <li>Open the Sidekick tool window (View → Tool Windows → Sidekick)</li>
+            <li>Start chatting with your local AI!</li>
+        </ol>
+    ]]></description>
+
+    <!--
+    =========================================================================
+    Change Notes
+    =========================================================================
+    Version history shown in the plugin details.
+    -->
+    <change-notes><![CDATA[
+        <h3>v0.1.0 - Initial Release</h3>
+        <ul>
+            <li>Plugin skeleton and core infrastructure</li>
+            <li>Basic project structure for future development</li>
+        </ul>
+    ]]></change-notes>
+
+    <!--
+    =========================================================================
+    Platform Dependencies
+    =========================================================================
+    Declare which IntelliJ Platform modules this plugin requires.
+    -->
+    
+    <!-- 
+    We depend on the Rider platform module, which gives us access to:
+    - ReSharper backend integration
+    - C#/F#/VB.NET language support
+    - .NET project model
+    -->
+    <depends>com.intellij.modules.rider</depends>
+
+    <!--
+    =========================================================================
+    Extensions
+    =========================================================================
+    Extension point implementations are registered here. Each extension
+    integrates our plugin with a specific IDE feature.
+    
+    For v0.1.0, we only register the core application service.
+    Tool windows, actions, and other extensions will be added in later versions.
+    -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!--
+        Application-level service that manages the plugin lifecycle.
+        This is created once when the IDE starts (or when the plugin loads).
+        -->
+        <applicationService 
+            serviceImplementation="com.sidekick.SidekickPlugin"/>
+        
+        <!--
+        Application-level service for Ollama LLM integration (v0.1.1).
+        Handles HTTP communication with the local Ollama server.
+        -->
+        <applicationService 
+            serviceImplementation="com.sidekick.services.ollama.OllamaService"/>
+        
+        <!--
+        Sidekick Chat Tool Window (v0.1.2).
+        Provides the main chat interface for conversing with the local LLM.
+        Anchored to the right side of the IDE by default.
+        -->
+        <toolWindow id="Sidekick"
+                    anchor="right"
+                    icon="/icons/sidekick.svg"
+                    factoryClass="com.sidekick.ui.SidekickToolWindowFactory"/>
+    </extensions>
+
+    <!--
+    =========================================================================
+    Actions
+    =========================================================================
+    Menu items and keyboard shortcuts are registered here.
+    
+    For v0.1.0, we have no user-facing actions yet.
+    Actions will be added in v0.1.2+ when we implement the chat UI.
+    -->
+    <actions>
+        <!-- Actions will be added in subsequent versions -->
+    </actions>
+</idea-plugin>

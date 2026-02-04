@@ -1,0 +1,31 @@
+<!--
+Sidekick main icon - 16x16
+A simple robot/AI assistant icon representing the local LLM companion.
+Uses IntelliJ platform-compatible colors that work in both light and dark themes.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- Background circle - uses a gradient for depth -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4F46E5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main circle background -->
+  <circle cx="8" cy="8" r="7" fill="url(#bgGradient)"/>
+  
+  <!-- Robot face outline -->
+  <rect x="4" y="5" width="8" height="7" rx="1.5" fill="#FFFFFF" opacity="0.95"/>
+  
+  <!-- Eyes - represent AI "vision" -->
+  <circle cx="6" cy="7.5" r="1" fill="#4F46E5"/>
+  <circle cx="10" cy="7.5" r="1" fill="#4F46E5"/>
+  
+  <!-- Mouth - friendly smile -->
+  <path d="M 5.5 10 Q 8 11.5 10.5 10" stroke="#4F46E5" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+  
+  <!-- Antenna - represents "connection" to LLM -->
+  <line x1="8" y1="5" x2="8" y2="2.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round"/>
+  <circle cx="8" cy="2" r="1" fill="#FFFFFF"/>
+</svg>

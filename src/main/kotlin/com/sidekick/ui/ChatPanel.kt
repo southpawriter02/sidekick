@@ -101,6 +101,15 @@ class ChatPanel(
     private val statusLabel = JBLabel().apply {
         border = JBUI.Borders.empty(4, 8)
     }
+    
+    /**
+     * Model selector dropdown.
+     */
+    private val modelSelector = ModelSelectorWidget().apply {
+        onModelChanged = { model ->
+            controller.setModel(model)
+        }
+    }
 
     // -------------------------------------------------------------------------
     // Controller
@@ -129,6 +138,7 @@ class ChatPanel(
         
         // Register for disposal
         Disposer.register(this, controller)
+        Disposer.register(this, modelSelector)
         
         // Build the UI layout
         setupLayout()
@@ -160,7 +170,7 @@ class ChatPanel(
     }
     
     /**
-     * Creates the header panel with title and status indicator.
+     * Creates the header panel with title, model selector, and status indicator.
      */
     private fun createHeaderPanel(): JPanel {
         return JPanel(BorderLayout()).apply {
@@ -172,8 +182,17 @@ class ChatPanel(
                 icon = SidekickIcons.SIDEKICK
             }
             
+            // Right side panel with model selector and status
+            val rightPanel = JPanel().apply {
+                layout = BoxLayout(this, BoxLayout.X_AXIS)
+                isOpaque = false
+                add(modelSelector)
+                add(Box.createHorizontalStrut(12))
+                add(statusLabel)
+            }
+            
             add(titleLabel, BorderLayout.WEST)
-            add(statusLabel, BorderLayout.EAST)
+            add(rightPanel, BorderLayout.EAST)
         }
     }
     

@@ -134,6 +134,23 @@ The IntelliJ Platform uses this file to:
                     anchor="right"
                     icon="/icons/sidekick.svg"
                     factoryClass="com.sidekick.ui.SidekickToolWindowFactory"/>
+        
+        <!--
+        Persistent settings service (v0.1.3).
+        Stores user preferences in sidekick.xml.
+        -->
+        <applicationService 
+            serviceImplementation="com.sidekick.settings.SidekickSettings"/>
+        
+        <!--
+        Settings UI panel (v0.1.3).
+        Adds Sidekick configuration under Preferences/Settings -> Tools.
+        -->
+        <applicationConfigurable
+            parentId="tools"
+            instance="com.sidekick.settings.SidekickConfigurable"
+            id="com.sidekick.settings"
+            displayName="Sidekick"/>
     </extensions>
 
     <!--

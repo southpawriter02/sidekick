@@ -24,8 +24,10 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.sidekick.services.ollama.OllamaService
 import com.sidekick.services.ollama.models.ChatMessage
+import com.sidekick.services.ollama.models.ChatOptions
 import com.sidekick.services.ollama.models.ChatRequest
 import com.sidekick.services.ollama.models.ConnectionStatus
+import com.sidekick.settings.SidekickSettings
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onCompletion
@@ -121,12 +123,18 @@ class ChatController(
         // Start connection status polling
         startStatusPolling()
         
-        // Configure Ollama service with default URL
-        // In v0.1.3, this will read from settings
+        // Load settings and configure Ollama service
         chatScope.launch {
             try {
+                val settings = SidekickSettings.getInstance()
                 val service = getOllamaService()
-                service.configure("http://localhost:11434")
+                service.configure(settings.ollamaUrl)
+                
+                // Load default model from settings
+                if (settings.defaultModel.isNotEmpty()) {
+                    selectedModel = settings.defaultModel
+                }
+                
                 updateConnectionStatus()
             } catch (e: Exception) {
                 LOG.warn("Failed to configure Ollama service: ${e.message}")
@@ -201,12 +209,27 @@ class ChatController(
      */
     private suspend fun streamChatResponse() {
         val service = getOllamaService()
+        val settings = SidekickSettings.getInstance()
+        
+        // Build message list with optional system prompt
+        val messages = mutableListOf<ChatMessage>()
+        if (settings.systemPrompt.isNotEmpty()) {
+            messages.add(ChatMessage.system(settings.systemPrompt))
+        }
+        messages.addAll(messageHistory)
+        
+        // Build chat options from settings
+        val options = ChatOptions(
+            temperature = settings.temperature,
+            numPredict = settings.maxTokens
+        )
         
         // Build the chat request
         val request = ChatRequest(
             model = selectedModel,
-            messages = messageHistory.toList(),
-            stream = true
+            messages = messages,
+            stream = settings.streamingEnabled,
+            options = options
         )
         
         // Accumulate the full response for history

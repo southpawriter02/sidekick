@@ -22,6 +22,9 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.sidekick.context.ContextBuilder
+import com.sidekick.context.EditorContextService
+import com.sidekick.context.ProjectContextService
 import com.sidekick.services.ollama.OllamaService
 import com.sidekick.services.ollama.models.ChatMessage
 import com.sidekick.services.ollama.models.ChatOptions
@@ -211,10 +214,13 @@ class ChatController(
         val service = getOllamaService()
         val settings = SidekickSettings.getInstance()
         
-        // Build message list with optional system prompt
+        // Build context-enriched system prompt (v0.2.2)
+        val systemPrompt = buildContextualSystemPrompt(settings)
+        
+        // Build message list with context-enriched system prompt
         val messages = mutableListOf<ChatMessage>()
-        if (settings.systemPrompt.isNotEmpty()) {
-            messages.add(ChatMessage.system(settings.systemPrompt))
+        if (systemPrompt.isNotEmpty()) {
+            messages.add(ChatMessage.system(systemPrompt))
         }
         messages.addAll(messageHistory)
         
@@ -276,6 +282,44 @@ class ChatController(
             chatPanel.showError(e.message ?: "Failed to communicate with Ollama")
             isProcessing = false
             chatPanel.setInputEnabled(true)
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Private Methods - Context Building (v0.2.2)
+    // -------------------------------------------------------------------------
+    
+    /**
+     * Builds a system prompt enriched with current context.
+     */
+    private fun buildContextualSystemPrompt(settings: SidekickSettings): String {
+        return try {
+            val editorService = EditorContextService.getInstance(project)
+            val projectService = ProjectContextService.getInstance(project)
+            
+            val contextBuilder = ContextBuilder.fromProject(editorService, projectService)
+                .standardChat()
+            
+            // Start with user's base system prompt
+            val basePrompt = settings.systemPrompt.ifEmpty {
+                "You are a helpful AI coding assistant. Help the user with their programming questions."
+            }
+            
+            // Add context if available
+            val contextSection = contextBuilder.build()
+            
+            if (contextSection.isNotEmpty()) {
+                buildString {
+                    append(basePrompt)
+                    append("\n\n## Current Context\n\n")
+                    append(contextSection)
+                }
+            } else {
+                basePrompt
+            }
+        } catch (e: Exception) {
+            LOG.debug("Failed to build context: ${e.message}")
+            settings.systemPrompt
         }
     }
 

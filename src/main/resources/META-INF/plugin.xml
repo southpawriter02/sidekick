@@ -172,6 +172,13 @@ The IntelliJ Platform uses this file to:
         -->
         <projectService 
             serviceImplementation="com.sidekick.actions.CodeActionService"/>
+        
+        <!--
+        Prompt Template Service (v0.2.4).
+        Manages prompt templates with variable substitution.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.prompts.PromptTemplateService"/>
     </extensions>
 
     <!--

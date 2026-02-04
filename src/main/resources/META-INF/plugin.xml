@@ -186,6 +186,13 @@ The IntelliJ Platform uses this file to:
         -->
         <projectService 
             serviceImplementation="com.sidekick.history.ChatHistoryService"/>
+        
+        <!--
+        Documentation Generator Service (v0.3.1).
+        Generates documentation for code symbols.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.generation.docs.DocGenService"/>
     </extensions>
 
     <!--
@@ -229,6 +236,26 @@ The IntelliJ Platform uses this file to:
                 text="Sidekick: Generate Tests"
                 description="Generate unit tests for the selected code">
             <keyboard-shortcut keymap="$default" first-keystroke="alt shift T"/>
+        </action>
+        
+        <!--
+        Documentation Generator (v0.3.1).
+        Generates documentation for symbol at cursor.
+        -->
+        <action id="Sidekick.GenerateDocumentation"
+                class="com.sidekick.generation.docs.GenerateDocumentationAction"
+                text="Sidekick: Generate Documentation"
+                description="Generate documentation for the symbol at cursor">
+            <add-to-group group-id="GenerateGroup" anchor="first"/>
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift D"/>
+        </action>
+        
+        <action id="Sidekick.GenerateDocumentationStub"
+                class="com.sidekick.generation.docs.GenerateDocumentationStubAction"
+                text="Sidekick: Generate Doc Stub"
+                description="Generate documentation stub without LLM">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>
 </idea-plugin>

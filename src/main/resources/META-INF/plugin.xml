@@ -228,6 +228,13 @@ The IntelliJ Platform uses this file to:
         -->
         <projectService 
             serviceImplementation="com.sidekick.generation.dto.DtoGenService"/>
+        
+        <!--
+        Test Navigation Service (v0.4.1).
+        Bi-directional source↔test file navigation.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.navigation.testjump.TestNavigationService"/>
     </extensions>
 
     <!--
@@ -396,6 +403,33 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.generation.dto.QuickGenerateDtoAction"
                 text="Sidekick: Quick Generate DTO"
                 description="Generate DTO without LLM">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Jump to Test/Source (v0.4.1).
+        Bi-directional navigation between source and test files.
+        -->
+        <action id="Sidekick.JumpToTest"
+                class="com.sidekick.navigation.testjump.JumpToTestAction"
+                text="Sidekick: Jump to Test/Source"
+                description="Toggle between source and test file">
+            <add-to-group group-id="GoToMenu" anchor="after" relative-to-action="GotoTest"/>
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift T"/>
+        </action>
+        
+        <action id="Sidekick.GoToTest"
+                class="com.sidekick.navigation.testjump.GoToTestAction"
+                text="Sidekick: Go to Test"
+                description="Navigate to test file for current source">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.GoToSource"
+                class="com.sidekick.navigation.testjump.GoToSourceAction"
+                text="Sidekick: Go to Source"
+                description="Navigate to source file for current test">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

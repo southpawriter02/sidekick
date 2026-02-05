@@ -235,6 +235,23 @@ The IntelliJ Platform uses this file to:
         -->
         <projectService 
             serviceImplementation="com.sidekick.navigation.testjump.TestNavigationService"/>
+        
+        <!--
+        Workspace Service (v0.4.2).
+        Manages bookmark/breakpoint workspaces with persistence.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.navigation.workspaces.WorkspaceService"/>
+        
+        <!--
+        Workspace Tool Window (v0.4.2).
+        UI panel for managing bookmark/breakpoint collections.
+        -->
+        <toolWindow id="Workspaces"
+                    anchor="right"
+                    secondary="true"
+                    icon="/icons/sidekick.svg"
+                    factoryClass="com.sidekick.navigation.workspaces.WorkspaceToolWindowFactory"/>
     </extensions>
 
     <!--
@@ -430,6 +447,31 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.navigation.testjump.GoToSourceAction"
                 text="Sidekick: Go to Source"
                 description="Navigate to source file for current test">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Bookmark Workspaces (v0.4.2).
+        Actions for workspace management.
+        -->
+        <action id="Sidekick.CreateWorkspace"
+                class="com.sidekick.navigation.workspaces.CreateWorkspaceAction"
+                text="Sidekick: Create Workspace"
+                description="Create a new bookmark/breakpoint workspace">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.SaveToWorkspace"
+                class="com.sidekick.navigation.workspaces.SaveToWorkspaceAction"
+                text="Sidekick: Save to Workspace"
+                description="Save current bookmarks/breakpoints to a workspace">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.RestoreWorkspace"
+                class="com.sidekick.navigation.workspaces.RestoreWorkspaceAction"
+                text="Sidekick: Restore Workspace"
+                description="Restore bookmarks/breakpoints from a workspace">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

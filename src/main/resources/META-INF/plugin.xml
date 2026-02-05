@@ -202,6 +202,13 @@ The IntelliJ Platform uses this file to:
             implementation="com.sidekick.visual.tabs.DepthTabColorProvider"/>
         
         <!--
+        Rainbow Scope Service (v0.5.2).
+        Detects and manages scope-based highlighting.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.visual.scopes.RainbowScopeService"/>
+        
+        <!--
         Prompt Template Service (v0.2.4).
         Manages prompt templates with variable substitution.
         -->
@@ -604,6 +611,38 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.visual.tabs.ShowFileDepthAction"
                 text="Sidekick: Show File Depth"
                 description="Show depth info for current file">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Rainbow Scopes (v0.5.2).
+        Scope-based background highlighting.
+        -->
+        <action id="Sidekick.ToggleRainbowScopes"
+                class="com.sidekick.visual.scopes.ToggleRainbowScopesAction"
+                text="Sidekick: Toggle Rainbow Scopes"
+                description="Toggle scope-based highlighting">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.SelectScopeScheme"
+                class="com.sidekick.visual.scopes.SelectScopeSchemeAction"
+                text="Sidekick: Select Scope Scheme"
+                description="Choose color scheme for scopes">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.ShowCurrentScope"
+                class="com.sidekick.visual.scopes.ShowCurrentScopeAction"
+                text="Sidekick: Show Current Scope"
+                description="Show scope at cursor position">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.ShowScopeStats"
+                class="com.sidekick.visual.scopes.ShowScopeStatsAction"
+                text="Sidekick: Show Scope Statistics"
+                description="Show scope statistics for current file">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

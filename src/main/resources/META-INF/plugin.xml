@@ -188,6 +188,20 @@ The IntelliJ Platform uses this file to:
             serviceImplementation="com.sidekick.actions.CodeActionService"/>
         
         <!--
+        Depth Tab Service (v0.5.1).
+        Calculates file depth and assigns tab colors.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.visual.tabs.DepthTabService"/>
+        
+        <!--
+        Depth Tab Color Provider (v0.5.1).
+        Provides depth-based tab coloring.
+        -->
+        <editorTabColorProvider 
+            implementation="com.sidekick.visual.tabs.DepthTabColorProvider"/>
+        
+        <!--
         Prompt Template Service (v0.2.4).
         Manages prompt templates with variable substitution.
         -->
@@ -565,6 +579,31 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.navigation.markdown.CopyAsMarkdownMinimalAction"
                 text="Sidekick: Copy as Markdown (Minimal)"
                 description="Copy as markdown without metadata">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Depth-Coded Tabs (v0.5.1).
+        Visual tab coloring based on file depth.
+        -->
+        <action id="Sidekick.ToggleDepthTabs"
+                class="com.sidekick.visual.tabs.ToggleDepthTabsAction"
+                text="Sidekick: Toggle Depth-Coded Tabs"
+                description="Toggle depth-based tab coloring">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.SelectDepthPalette"
+                class="com.sidekick.visual.tabs.SelectDepthPaletteAction"
+                text="Sidekick: Select Tab Palette"
+                description="Choose color palette for depth tabs">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.ShowFileDepth"
+                class="com.sidekick.visual.tabs.ShowFileDepthAction"
+                text="Sidekick: Show File Depth"
+                description="Show depth info for current file">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

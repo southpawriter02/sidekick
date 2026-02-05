@@ -126,6 +126,20 @@ The IntelliJ Platform uses this file to:
             serviceImplementation="com.sidekick.services.ollama.OllamaService"/>
         
         <!--
+        Snippet Service (v0.4.3).
+        Multi-slot clipboard for code snippets with persistence.
+        -->
+        <applicationService 
+            serviceImplementation="com.sidekick.navigation.snippets.SnippetService"/>
+        
+        <!--
+        Recent Files Service (v0.4.4).
+        Visual file browser with tracking and grouping.
+        -->
+        <applicationService 
+            serviceImplementation="com.sidekick.navigation.recentfiles.RecentFilesService"/>
+        
+        <!--
         Sidekick Chat Tool Window (v0.1.2).
         Provides the main chat interface for conversing with the local LLM.
         Anchored to the right side of the IDE by default.
@@ -472,6 +486,59 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.navigation.workspaces.RestoreWorkspaceAction"
                 text="Sidekick: Restore Workspace"
                 description="Restore bookmarks/breakpoints from a workspace">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Snippet Pocket (v0.4.3).
+        Actions for multi-slot clipboard.
+        -->
+        <action id="Sidekick.CaptureSnippet"
+                class="com.sidekick.navigation.snippets.CaptureSnippetAction"
+                text="Sidekick: Capture Snippet"
+                description="Capture selection to snippet pocket">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift C"/>
+        </action>
+        
+        <action id="Sidekick.ShowSnippetPocket"
+                class="com.sidekick.navigation.snippets.ShowSnippetPocketAction"
+                text="Sidekick: Show Snippet Pocket"
+                description="Show all saved snippets">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift V"/>
+        </action>
+        
+        <action id="Sidekick.ClearSnippetPocket"
+                class="com.sidekick.navigation.snippets.ClearSnippetPocketAction"
+                text="Sidekick: Clear Snippet Pocket"
+                description="Clear all snippets from pocket">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Recent Files Grid (v0.4.4).
+        Actions for visual file browser.
+        -->
+        <action id="Sidekick.ShowRecentFilesGrid"
+                class="com.sidekick.navigation.recentfiles.ShowRecentFilesGridAction"
+                text="Sidekick: Show Recent Files"
+                description="Show recent files grid">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift R"/>
+        </action>
+        
+        <action id="Sidekick.TogglePinFile"
+                class="com.sidekick.navigation.recentfiles.TogglePinFileAction"
+                text="Sidekick: Toggle Pin File"
+                description="Pin or unpin current file">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.ClearRecentFiles"
+                class="com.sidekick.navigation.recentfiles.ClearRecentFilesAction"
+                text="Sidekick: Clear Recent Files"
+                description="Clear recent files history">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

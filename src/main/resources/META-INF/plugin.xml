@@ -99,6 +99,7 @@ The IntelliJ Platform uses this file to:
     - .NET project model
     -->
     <depends>com.intellij.modules.rider</depends>
+    <depends>Git4Idea</depends>
 
     <!--
     =========================================================================
@@ -228,6 +229,13 @@ The IntelliJ Platform uses this file to:
         -->
         <editorTabColorProvider 
             implementation="com.sidekick.visual.age.FileAgeTabColorProvider"/>
+        
+        <!--
+        Git Heatmap Service (v0.5.5).
+        Computes git statistics for heatmap.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.visual.git.GitHeatmapService"/>
         
         <!--
         Prompt Template Service (v0.2.4).
@@ -735,6 +743,31 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.visual.age.ClearAgeCacheAction"
                 text="Sidekick: Clear Age Cache"
                 description="Clear the file age cache">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Git Heatmap (v0.5.5).
+        Gutter indicators for commit frequency.
+        -->
+        <action id="Sidekick.ToggleGitHeatmap"
+                class="com.sidekick.visual.git.ToggleGitHeatmapAction"
+                text="Sidekick: Toggle Git Heatmap"
+                description="Toggle git heatmap in gutter">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.SelectHeatmapMetric"
+                class="com.sidekick.visual.git.SelectHeatmapMetricAction"
+                text="Sidekick: Select Heatmap Metric"
+                description="Choose metric for git heatmap">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.SelectHeatmapScheme"
+                class="com.sidekick.visual.git.SelectHeatmapSchemeAction"
+                text="Sidekick: Select Heatmap Scheme"
+                description="Choose color scheme for git heatmap">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

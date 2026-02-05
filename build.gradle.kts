@@ -104,8 +104,8 @@ intellij {
     // This gives us access to Rider-specific APIs and the ReSharper backend
     type.set("RD")
     
-    // Additional plugins we depend on (empty for now, will add as needed)
-    plugins.set(listOf<String>())
+    // Additional plugins we depend on
+    plugins.set(listOf("Git4Idea"))
     
     // Download sources for better IDE support during development
     downloadSources.set(true)

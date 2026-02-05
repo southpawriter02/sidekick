@@ -541,5 +541,31 @@ The IntelliJ Platform uses this file to:
                 description="Clear recent files history">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
+        
+        <!--
+        Copy as Markdown (v0.4.5).
+        Actions for syntax-highlighted code copying.
+        -->
+        <action id="Sidekick.CopyAsMarkdown"
+                class="com.sidekick.navigation.markdown.CopyAsMarkdownAction"
+                text="Sidekick: Copy as Markdown"
+                description="Copy selected code as markdown">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift M"/>
+        </action>
+        
+        <action id="Sidekick.CopyAsMarkdownWithOptions"
+                class="com.sidekick.navigation.markdown.CopyAsMarkdownWithOptionsAction"
+                text="Sidekick: Copy as Markdown (Options)"
+                description="Copy as markdown with options dialog">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.CopyAsMarkdownMinimal"
+                class="com.sidekick.navigation.markdown.CopyAsMarkdownMinimalAction"
+                text="Sidekick: Copy as Markdown (Minimal)"
+                description="Copy as markdown without metadata">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
     </actions>
 </idea-plugin>

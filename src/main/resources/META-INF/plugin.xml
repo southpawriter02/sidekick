@@ -216,6 +216,20 @@ The IntelliJ Platform uses this file to:
             serviceImplementation="com.sidekick.visual.separators.MethodSeparatorService"/>
         
         <!--
+        File Age Service (v0.5.4).
+        Tracks file modification times for age indicators.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.visual.age.FileAgeService"/>
+        
+        <!--
+        File Age Tab Color Provider (v0.5.4).
+        Colors tabs based on file age.
+        -->
+        <editorTabColorProvider 
+            implementation="com.sidekick.visual.age.FileAgeTabColorProvider"/>
+        
+        <!--
         Prompt Template Service (v0.2.4).
         Manages prompt templates with variable substitution.
         -->
@@ -682,6 +696,45 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.visual.separators.ShowSeparatorStatsAction"
                 text="Sidekick: Show Separator Statistics"
                 description="Show separator statistics for current file">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        File Age Indicator (v0.5.4).
+        Tab colors based on file modification time.
+        -->
+        <action id="Sidekick.ToggleFileAge"
+                class="com.sidekick.visual.age.ToggleFileAgeAction"
+                text="Sidekick: Toggle File Age Indicator"
+                description="Toggle file age-based tab coloring">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.SelectAgeScheme"
+                class="com.sidekick.visual.age.SelectAgeSchemeAction"
+                text="Sidekick: Select Age Color Scheme"
+                description="Choose color scheme for file age">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.ToggleGitTime"
+                class="com.sidekick.visual.age.ToggleGitTimeAction"
+                text="Sidekick: Toggle Git Time"
+                description="Switch between Git and file system time">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.ShowFileAgeInfo"
+                class="com.sidekick.visual.age.ShowFileAgeInfoAction"
+                text="Sidekick: Show File Age Info"
+                description="Show age information for current file">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.ClearAgeCache"
+                class="com.sidekick.visual.age.ClearAgeCacheAction"
+                text="Sidekick: Clear Age Cache"
+                description="Clear the file age cache">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

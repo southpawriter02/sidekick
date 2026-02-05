@@ -209,6 +209,13 @@ The IntelliJ Platform uses this file to:
             serviceImplementation="com.sidekick.visual.scopes.RainbowScopeService"/>
         
         <!--
+        Method Separator Service (v0.5.3).
+        Detects method boundaries for visual separators.
+        -->
+        <projectService 
+            serviceImplementation="com.sidekick.visual.separators.MethodSeparatorService"/>
+        
+        <!--
         Prompt Template Service (v0.2.4).
         Manages prompt templates with variable substitution.
         -->
@@ -643,6 +650,38 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.visual.scopes.ShowScopeStatsAction"
                 text="Sidekick: Show Scope Statistics"
                 description="Show scope statistics for current file">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Method Separators (v0.5.3).
+        Visual divider lines between methods.
+        -->
+        <action id="Sidekick.ToggleMethodSeparators"
+                class="com.sidekick.visual.separators.ToggleMethodSeparatorsAction"
+                text="Sidekick: Toggle Method Separators"
+                description="Toggle visual separator lines between methods">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.SelectSeparatorStyle"
+                class="com.sidekick.visual.separators.SelectSeparatorStyleAction"
+                text="Sidekick: Select Separator Style"
+                description="Choose line style for separators">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.SelectSeparatorColor"
+                class="com.sidekick.visual.separators.SelectSeparatorColorAction"
+                text="Sidekick: Select Separator Color"
+                description="Choose color theme for separators">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <action id="Sidekick.ShowSeparatorStats"
+                class="com.sidekick.visual.separators.ShowSeparatorStatsAction"
+                text="Sidekick: Show Separator Statistics"
+                description="Show separator statistics for current file">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

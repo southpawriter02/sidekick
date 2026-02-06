@@ -272,8 +272,8 @@ class DeadCodeServiceTest {
         }
 
         private fun createSymbol(visibility: SymbolVisibility) = DeadCodeSymbol(
-            name = "test",
-            qualifiedName = "com.example.test",
+            name = "myMethod",
+            qualifiedName = "com.example.myMethod",
             type = SymbolType.METHOD,
             location = SymbolLocation.empty(),
             usageCount = 0,
@@ -320,8 +320,8 @@ class DeadCodeServiceTest {
         }
 
         private fun createSymbol(confidence: Float) = DeadCodeSymbol(
-            name = "test",
-            qualifiedName = "com.example.test",
+            name = "myMethod",
+            qualifiedName = "com.example.myMethod",
             type = SymbolType.METHOD,
             location = SymbolLocation.empty(),
             usageCount = 0,

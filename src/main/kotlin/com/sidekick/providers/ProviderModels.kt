@@ -75,7 +75,7 @@ sealed class ProviderConfig {
     /**
      * Gets the base URL for API requests.
      */
-    abstract fun getBaseUrl(): String
+    abstract fun resolveBaseUrl(): String
 
     // =========================================================================
     // Ollama - Local LLM Server
@@ -106,12 +106,12 @@ sealed class ProviderConfig {
             return errors
         }
 
-        override fun getBaseUrl() = "http://$host:$port"
+        override fun resolveBaseUrl() = "http://$host:$port"
 
         /**
          * Gets the API URL for a specific endpoint.
          */
-        fun getApiUrl(endpoint: String) = "${getBaseUrl()}/api/$endpoint"
+        fun getApiUrl(endpoint: String) = "${resolveBaseUrl()}/api/$endpoint"
     }
 
     // =========================================================================
@@ -143,7 +143,7 @@ sealed class ProviderConfig {
             return errors
         }
 
-        override fun getBaseUrl() = "http://$host:$port/v1"
+        override fun resolveBaseUrl() = "http://$host:$port/v1"
     }
 
     // =========================================================================
@@ -177,7 +177,7 @@ sealed class ProviderConfig {
             return errors
         }
 
-        override fun getBaseUrl() = baseUrl
+        override fun resolveBaseUrl() = baseUrl
 
         /**
          * Checks if API key is configured.
@@ -228,7 +228,7 @@ sealed class ProviderConfig {
             return errors
         }
 
-        override fun getBaseUrl() = baseUrl
+        override fun resolveBaseUrl() = baseUrl
 
         /**
          * Checks if API key is configured.
@@ -286,12 +286,12 @@ sealed class ProviderConfig {
             return errors
         }
 
-        override fun getBaseUrl() = "$endpoint/openai/deployments/$deploymentId"
+        override fun resolveBaseUrl() = "$endpoint/openai/deployments/$deploymentId"
 
         /**
          * Gets the full URL for chat completions.
          */
-        fun getChatCompletionsUrl() = "${getBaseUrl()}/chat/completions?api-version=$apiVersion"
+        fun getChatCompletionsUrl() = "${resolveBaseUrl()}/chat/completions?api-version=$apiVersion"
 
         /**
          * Gets headers for API requests.
@@ -339,7 +339,7 @@ sealed class ProviderConfig {
             return errors
         }
 
-        override fun getBaseUrl() = baseUrl
+        override fun resolveBaseUrl() = baseUrl
 
         /**
          * Gets all headers including API key.

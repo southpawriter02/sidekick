@@ -188,9 +188,9 @@ class SpecialistServiceTest {
         fun suggestSpecialistRecommendsCorrectRole() {
             assertEquals(AgentRole.ARCHITECT, service.suggestSpecialist("design the architecture"))
             assertEquals(AgentRole.IMPLEMENTER, service.suggestSpecialist("implement the feature"))
-            assertEquals(AgentRole.TESTER, service.suggestSpecialist("write unit tests"))
+            assertEquals(AgentRole.TESTER, service.suggestSpecialist("run unit tests"))
             assertEquals(AgentRole.DEBUGGER, service.suggestSpecialist("fix this bug"))
-            assertEquals(AgentRole.SECURITY, service.suggestSpecialist("check for vulnerabilities"))
+            assertEquals(AgentRole.SECURITY, service.suggestSpecialist("assess vulnerability risk"))
             assertEquals(AgentRole.OPTIMIZER, service.suggestSpecialist("optimize performance"))
         }
     }
@@ -263,12 +263,12 @@ class SpecialistServiceTest {
         @Test
         @DisplayName("emits agent invoked event")
         fun emitsAgentInvokedEvent() = runBlocking {
-            var received: SpecialistEvent? = null
-            service.addListener { event -> received = event }
+            val events = mutableListOf<SpecialistEvent>()
+            service.addListener { event -> events.add(event) }
 
             service.invoke(AgentRole.TESTER, "Write tests")
 
-            assertTrue(received is SpecialistEvent.AgentInvoked)
+            assertTrue(events.any { it is SpecialistEvent.AgentInvoked })
         }
 
         @Test

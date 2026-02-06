@@ -154,8 +154,8 @@ class PlanningModelsTest {
 
             assertEquals(3, plan.steps.size)
             assertTrue(plan.validate().valid)
-            assertEquals("2", plan.dependencies["2"]?.first())
-            assertEquals("3", plan.dependencies["3"]?.first())
+            assertEquals("1", plan.dependencies["2"]?.first())
+            assertEquals("2", plan.dependencies["3"]?.first())
         }
 
         private fun createTestPlan(): TaskPlan {

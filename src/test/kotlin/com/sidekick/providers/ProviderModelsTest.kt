@@ -34,7 +34,7 @@ class ProviderModelsTest {
         @DisplayName("getBaseUrl returns correct URL")
         fun getBaseUrlReturnsCorrectUrl() {
             val config = ProviderConfig.Ollama(host = "myhost", port = 8080)
-            assertEquals("http://myhost:8080", config.getBaseUrl())
+            assertEquals("http://myhost:8080", config.resolveBaseUrl())
         }
 
         @Test
@@ -82,7 +82,7 @@ class ProviderModelsTest {
         @DisplayName("getBaseUrl includes v1 path")
         fun getBaseUrlIncludesV1Path() {
             val config = ProviderConfig.LmStudio()
-            assertTrue(config.getBaseUrl().endsWith("/v1"))
+            assertTrue(config.resolveBaseUrl().endsWith("/v1"))
         }
     }
 

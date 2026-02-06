@@ -134,7 +134,7 @@ class SelfCorrectionService(
         sessionId?.let { id ->
             val session = sessions[id]
             if (session != null) {
-                var updated = session
+                var updated: CorrectionSession = session
                 filtered.forEach { error ->
                     updated = updated.addError(error)
                     emitEvent(CorrectionEvent.ErrorDetected(id, error.id, error.type, error.severity))
@@ -155,7 +155,7 @@ class SelfCorrectionService(
         if (openBraces != closeBraces) {
             errors.add(DetectedError.syntax(
                 "Unbalanced braces: $openBraces open, $closeBraces close",
-                suggestedFix = "Add ${kotlin.math.abs(openBraces - closeBraces)} ${if (openBraces > closeBraces) "closing" else "opening"} brace(s)"
+                fix = "Add ${kotlin.math.abs(openBraces - closeBraces)} ${if (openBraces > closeBraces) "closing" else "opening"} brace(s)"
             ))
         }
 
@@ -222,6 +222,11 @@ class SelfCorrectionService(
 
     private fun detectIncompleteResponse(content: String): List<DetectedError> {
         val errors = mutableListOf<DetectedError>()
+
+        // Check for very short content (likely incomplete)
+        if (content.length < 50) {
+            errors.add(DetectedError.incomplete("Response is too short (${content.length} chars)"))
+        }
 
         // Check for truncated content
         if (content.endsWith("...") || content.endsWith("…")) {
@@ -534,9 +539,7 @@ class SelfCorrectionService(
         return when {
             previousAttempts >= 2 -> CorrectionStrategy.FULL_REGENERATION
             previousAttempts == 1 -> CorrectionStrategy.REGENERATE_SECTION
-            error.isCritical -> CorrectionStrategy.TARGETED_FIX
-            error.hasSuggestedFix -> CorrectionStrategy.TARGETED_FIX
-            else -> error.type.defaultStrategy
+            else -> CorrectionStrategy.TARGETED_FIX
         }
     }
 

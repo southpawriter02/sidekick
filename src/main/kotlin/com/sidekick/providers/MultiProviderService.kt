@@ -437,13 +437,13 @@ class MultiProviderService : PersistentStateComponent<MultiProviderService.State
 
     private suspend fun testOllamaConnection(config: ProviderConfig.Ollama): ConnectionTestResult {
         // In production: HTTP GET to config.getApiUrl("tags")
-        log.debug("Testing Ollama connection: ${config.getBaseUrl()}")
+        log.debug("Testing Ollama connection: ${config.resolveBaseUrl()}")
         return ConnectionTestResult.connected("Ollama ready", models = listOf("llama2", "codellama", "mistral"))
     }
 
     private suspend fun testLmStudioConnection(config: ProviderConfig.LmStudio): ConnectionTestResult {
-        // In production: HTTP GET to config.getBaseUrl() + "/models"
-        log.debug("Testing LM Studio connection: ${config.getBaseUrl()}")
+        // In production: HTTP GET to config.resolveBaseUrl() + "/models"
+        log.debug("Testing LM Studio connection: ${config.resolveBaseUrl()}")
         return ConnectionTestResult.connected("LM Studio ready", models = listOf("local-model"))
     }
 
@@ -452,7 +452,7 @@ class MultiProviderService : PersistentStateComponent<MultiProviderService.State
             return ConnectionTestResult.failed("API key not configured")
         }
         // In production: HTTP GET to /v1/models with auth headers
-        log.debug("Testing OpenAI connection: ${config.getBaseUrl()}")
+        log.debug("Testing OpenAI connection: ${config.resolveBaseUrl()}")
         return ConnectionTestResult.connected("OpenAI ready", models = listOf("gpt-4", "gpt-4o", "gpt-3.5-turbo"))
     }
 
@@ -461,7 +461,7 @@ class MultiProviderService : PersistentStateComponent<MultiProviderService.State
             return ConnectionTestResult.failed("API key not configured")
         }
         // In production: HTTP POST to /v1/messages (test message)
-        log.debug("Testing Anthropic connection: ${config.getBaseUrl()}")
+        log.debug("Testing Anthropic connection: ${config.resolveBaseUrl()}")
         return ConnectionTestResult.connected("Anthropic ready", models = listOf("claude-3-opus", "claude-3-sonnet"))
     }
 
@@ -471,7 +471,7 @@ class MultiProviderService : PersistentStateComponent<MultiProviderService.State
             return ConnectionTestResult.failed(errors.joinToString(", "))
         }
         // In production: HTTP GET to deployment endpoint
-        log.debug("Testing Azure OpenAI connection: ${config.getBaseUrl()}")
+        log.debug("Testing Azure OpenAI connection: ${config.resolveBaseUrl()}")
         return ConnectionTestResult.connected("Azure OpenAI ready", models = listOf(config.deploymentId))
     }
 
@@ -481,7 +481,7 @@ class MultiProviderService : PersistentStateComponent<MultiProviderService.State
             return ConnectionTestResult.failed(errors.joinToString(", "))
         }
         // In production: HTTP GET to /v1/models
-        log.debug("Testing custom provider connection: ${config.getBaseUrl()}")
+        log.debug("Testing custom provider connection: ${config.resolveBaseUrl()}")
         return ConnectionTestResult.connected("${config.name} ready")
     }
 

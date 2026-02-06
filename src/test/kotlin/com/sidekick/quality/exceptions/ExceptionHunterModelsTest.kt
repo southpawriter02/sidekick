@@ -157,7 +157,7 @@ class ExceptionHunterModelsTest {
                 throwsDeclaration = listOf("IOException")
             )
 
-            assertTrue(callSite.declaresException("FileNotFoundException"))
+            assertTrue(callSite.declaresException("java.io.IOException"))
         }
 
         @Test

@@ -242,7 +242,8 @@ class CollaborationOrchestrator(
             val result = executeTurn(sessionId)
             if (!result.success) break
 
-            result.message?.let { message ->
+            val message = result.message
+            if (message != null) {
                 messages.add(message)
                 val session = sessions[sessionId] ?: break
                 if (stopCondition(session, message)) break

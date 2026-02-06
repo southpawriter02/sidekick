@@ -96,7 +96,8 @@ data class CallSite(
      */
     fun declaresException(exceptionType: String): Boolean {
         return throwsDeclaration.any { declared ->
-            exceptionType.contains(declared) || declared.contains(exceptionType)
+            exceptionType.contains(declared) || declared.contains(exceptionType) ||
+            exceptionType.endsWith(declared) || declared.endsWith(exceptionType)
         }
     }
 }

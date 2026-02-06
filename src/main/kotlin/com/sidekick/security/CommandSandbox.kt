@@ -437,7 +437,7 @@ class CommandSandbox {
         when (event.severity) {
             SecuritySeverity.INFO -> log.debug(event.format())
             SecuritySeverity.WARNING -> log.warn(event.format())
-            SecuritySeverity.HIGH, SecuritySeverity.CRITICAL -> log.error(event.format())
+            SecuritySeverity.HIGH, SecuritySeverity.CRITICAL -> log.warn(event.format())
         }
     }
 

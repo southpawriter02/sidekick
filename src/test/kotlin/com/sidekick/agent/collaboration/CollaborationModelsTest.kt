@@ -432,7 +432,7 @@ class CollaborationModelsTest {
                 goal = "Goal",
                 success = true,
                 outcome = "Done",
-                decisions = listOf(Decision("D1", "R1", AgentRole.ARCHITECT)),
+                decisions = listOf(Decision(description = "D1", rationale = "R1", madeBy = AgentRole.ARCHITECT)),
                 artifacts = emptyMap(),
                 totalTurns = 5,
                 messageCount = 10,

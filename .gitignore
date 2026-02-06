@@ -32,6 +32,9 @@ out/
 # Plugin sandbox (runtime test environment)
 /build/idea-sandbox/
 
+# IntelliJ Platform cache and lock files
+.intellijPlatform/
+
 # ------------------------------------------------------------
 # Operating System Files
 # ------------------------------------------------------------

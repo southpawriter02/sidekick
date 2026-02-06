@@ -119,7 +119,7 @@ class WorkflowExecutor(
         if (step.condition != null && !step.condition.evaluate(run.context)) {
             // Skip step, move to next
             val nextStep = workflow.getNextStep(stepId, true)
-            val updatedRun = run.withStep(nextStep?.id)
+            val updatedRun = if (nextStep != null) run.withStep(nextStep.id) else run
             activeRuns[runId] = updatedRun
             return StepResult.success(stepId, step.action, "Skipped due to condition")
         }
@@ -246,7 +246,7 @@ class WorkflowExecutor(
         // Update run
         val updatedRun = run
             .withResult(result)
-            .withStep(nextStep?.id)
+            .let { if (nextStep != null) it.withStep(nextStep.id) else it }
             .withStatus(if (nextStep != null) WorkflowStatus.RUNNING else WorkflowStatus.COMPLETED)
             .let { if (nextStep == null) it.complete() else it }
 

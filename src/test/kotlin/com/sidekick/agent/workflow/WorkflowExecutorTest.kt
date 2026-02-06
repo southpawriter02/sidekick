@@ -304,7 +304,10 @@ class WorkflowExecutorTest {
                 id = "simple",
                 name = "Simple",
                 description = "Simple workflow",
-                steps = listOf(WorkflowStep("1", WorkflowAction.LOG, onSuccess = "2"))
+                steps = listOf(
+                    WorkflowStep("1", WorkflowAction.LOG, onSuccess = "2"),
+                    WorkflowStep("2", WorkflowAction.LOG)
+                )
             )
             executor.registerWorkflow(simpleWorkflow)
 
@@ -377,7 +380,10 @@ class WorkflowExecutorTest {
                 id = "simple",
                 name = "Simple",
                 description = "Simple workflow",
-                steps = listOf(WorkflowStep("1", WorkflowAction.LOG, onSuccess = "2"))
+                steps = listOf(
+                    WorkflowStep("1", WorkflowAction.LOG, onSuccess = "2"),
+                    WorkflowStep("2", WorkflowAction.LOG)
+                )
             )
             executor.registerWorkflow(simpleWorkflow)
 

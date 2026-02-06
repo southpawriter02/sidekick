@@ -148,8 +148,8 @@ class PerformanceModelsTest {
         @DisplayName("formatHeapUsage produces readable string")
         fun formatHeapUsageProducesReadableString() {
             val usage = MemoryUsage(
-                heapUsed = 512 * 1024 * 1024, // 512MB
-                heapMax = 2048 * 1024 * 1024, // 2048MB
+                heapUsed = 512L * 1024 * 1024, // 512MB
+                heapMax = 2048L * 1024 * 1024, // 2048MB
                 nonHeapUsed = 0,
                 gcCount = 0,
                 gcTime = Duration.ZERO

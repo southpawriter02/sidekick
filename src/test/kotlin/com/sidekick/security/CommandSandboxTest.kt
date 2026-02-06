@@ -359,9 +359,10 @@ class CommandSandboxTest {
             sandbox.validateCommand("rm -rf /", "/tmp")
             sandbox.validateFileAccess("../secret", false)
 
-            val recent = sandbox.getRecentEvents(2)
-            assertEquals(SecurityEventType.PATH_TRAVERSAL_ATTEMPT, recent[0].type)
-            assertEquals(SecurityEventType.COMMAND_BLOCKED, recent[1].type)
+            val recent = sandbox.getRecentEvents(3)
+            assertEquals(SecurityEventType.FILE_ACCESS_DENIED, recent[0].type)
+            assertEquals(SecurityEventType.PATH_TRAVERSAL_ATTEMPT, recent[1].type)
+            assertEquals(SecurityEventType.COMMAND_BLOCKED, recent[2].type)
         }
 
         @Test

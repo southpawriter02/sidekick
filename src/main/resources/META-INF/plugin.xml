@@ -168,6 +168,23 @@ The IntelliJ Platform uses this file to:
             displayName="Sidekick"/>
         
         <!--
+        LM Studio Settings (v0.8.1).
+        Nested under Sidekick settings for LM Studio server configuration.
+        -->
+        <applicationConfigurable
+            parentId="com.sidekick.settings"
+            instance="com.sidekick.llm.lmstudio.LmStudioSettingsConfigurable"
+            id="com.sidekick.lmstudio.settings"
+            displayName="LM Studio"/>
+        
+        <!--
+        LM Studio Service (v0.8.1).
+        Application-level service for LM Studio OpenAI-compatible API integration.
+        -->
+        <applicationService 
+            serviceImplementation="com.sidekick.llm.lmstudio.LmStudioService"/>
+        
+        <!--
         Editor Context Service (v0.2.1).
         Extracts context from the current editor (file, selection, cursor).
         -->

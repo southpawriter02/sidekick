@@ -25,6 +25,7 @@ import com.intellij.util.ui.JBUI
 import com.sidekick.services.ollama.OllamaService
 import com.sidekick.settings.SidekickSettings
 import kotlinx.coroutines.*
+import javax.swing.SwingUtilities
 import java.awt.BorderLayout
 import java.awt.event.ItemEvent
 import javax.swing.DefaultComboBoxModel
@@ -165,10 +166,10 @@ class ModelSelectorWidget : JPanel(BorderLayout()), Disposable {
             
             val result = service.listModels()
             
-            withContext(Dispatchers.Main) {
-                result
-                    .onSuccess { models ->
-                        availableModels = models.map { it.name }
+            result
+                .onSuccess { models ->
+                    availableModels = models.map { it.name }
+                    SwingUtilities.invokeLater {
                         updateComboBox(availableModels)
                         
                         // Select default model if configured
@@ -178,20 +179,22 @@ class ModelSelectorWidget : JPanel(BorderLayout()), Disposable {
                         } else if (availableModels.isNotEmpty()) {
                             comboBox.selectedIndex = 0
                         }
-                        
-                        LOG.debug("Loaded ${availableModels.size} models")
                     }
-                    .onFailure { e ->
-                        LOG.warn("Failed to load models: ${e.message}")
+                    
+                    LOG.debug("Loaded ${availableModels.size} models")
+                }
+                .onFailure { e ->
+                    LOG.warn("Failed to load models: ${e.message}")
+                    SwingUtilities.invokeLater {
                         comboBox.model = DefaultComboBoxModel(arrayOf(ERROR_TEXT))
                         comboBox.isEnabled = false
                     }
-            }
+                }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             LOG.error("Error loading models: ${e.message}", e)
-            withContext(Dispatchers.Main) {
+            SwingUtilities.invokeLater {
                 comboBox.model = DefaultComboBoxModel(arrayOf(ERROR_TEXT))
                 comboBox.isEnabled = false
             }

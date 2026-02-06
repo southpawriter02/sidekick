@@ -11,11 +11,11 @@ plugins {
     id("java")
     
     // Kotlin JVM - our primary implementation language
-    id("org.jetbrains.kotlin.jvm") version "2.0.0"
+    id("org.jetbrains.kotlin.jvm") version "2.0.21"
     
     // Kotlin Serialization - for @Serializable annotations on data classes
     // Used for Ollama API request/response JSON serialization
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.0"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
     
     // IntelliJ Platform Gradle Plugin 2.x - handles SDK setup, running, and packaging
     // Version 2.x has proper Java 25 support and modern Gradle compatibility
@@ -124,9 +124,9 @@ intellijPlatform {
             // Minimum supported IDE build number (2024.1.x)
             sinceBuild = "241"
             
-            // Maximum supported IDE build number (up to 2024.3.x)
-            // Using wildcard to support all minor versions in the 243 series
-            untilBuild = "243.*"
+            // Maximum supported IDE build number (up to 2025.3.x)
+            // Using wildcard to support all minor versions in the 253 series
+            untilBuild = "253.*"
         }
     }
 }

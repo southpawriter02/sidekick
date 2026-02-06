@@ -384,7 +384,7 @@ class TodoService(private val project: Project) : PersistentStateComponent<TodoS
         return text
             .removePrefix("//")
             .removePrefix("/*")
-            .removeSuffix("*/")
+            .replace(Regex("""\s*\*/\s*$"""), "")
             .removePrefix("*")
             .replace(Regex("""TODO:?|FIXME:?|HACK:?|BUG:?|NOTE:?|OPTIMIZE:?|PERF:?|REVIEW:?|DEPRECATED:?""", RegexOption.IGNORE_CASE), "")
             .trim()

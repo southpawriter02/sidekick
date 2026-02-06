@@ -11,14 +11,15 @@ plugins {
     id("java")
     
     // Kotlin JVM - our primary implementation language
-    id("org.jetbrains.kotlin.jvm") version "1.9.22"
+    id("org.jetbrains.kotlin.jvm") version "2.0.0"
     
     // Kotlin Serialization - for @Serializable annotations on data classes
     // Used for Ollama API request/response JSON serialization
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.0"
     
-    // IntelliJ Platform Gradle Plugin - handles SDK setup, running, and packaging
-    id("org.jetbrains.intellij") version "1.17.2"
+    // IntelliJ Platform Gradle Plugin 2.x - handles SDK setup, running, and packaging
+    // Version 2.x has proper Java 25 support and modern Gradle compatibility
+    id("org.jetbrains.intellij.platform") version "2.2.1"
 }
 
 // -----------------------------------------------------------------------------
@@ -32,12 +33,17 @@ version = "0.1.0"
 // -----------------------------------------------------------------------------
 repositories {
     mavenCentral()
+    
+    // IntelliJ Platform dependencies repository (required for 2.x plugin)
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
 // -----------------------------------------------------------------------------
 // Dependencies
 // -----------------------------------------------------------------------------
-// Note: IntelliJ Platform dependencies are managed by the intellij { } block.
+// Note: IntelliJ Platform dependencies are now managed in the intellijPlatform { } block.
 // Here we add libraries for HTTP communication (Ktor) and testing.
 // -----------------------------------------------------------------------------
 
@@ -46,6 +52,17 @@ val ktorVersion = "2.3.8"
 val coroutinesVersion = "1.7.3"
 
 dependencies {
+    // -------------------------------------------------------------------------
+    // IntelliJ Platform Dependencies (2.x plugin style)
+    // -------------------------------------------------------------------------
+    intellijPlatform {
+        // Target Rider - we're building specifically for C#/.NET developers
+        rider("2024.1")
+        
+        // Additional plugins we depend on
+        bundledPlugin("Git4Idea")
+    }
+    
     // -------------------------------------------------------------------------
     // Runtime Dependencies - Ollama Client (v0.1.1)
     // -------------------------------------------------------------------------
@@ -83,6 +100,9 @@ dependencies {
     
     // Ktor Mock Engine - For testing HTTP client without real network calls
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
+    
+    // JUnit Platform Launcher - Required by Gradle 9.x to start the test executor
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 // -----------------------------------------------------------------------------
@@ -94,37 +114,27 @@ kotlin {
 }
 
 // -----------------------------------------------------------------------------
-// IntelliJ Platform Plugin Configuration
+// IntelliJ Platform Plugin Configuration (2.x style)
 // -----------------------------------------------------------------------------
-intellij {
-    // Target IntelliJ Platform version - 2024.1 is our baseline
-    version.set("2024.1")
-    
-    // "RD" = Rider - we're building specifically for C#/.NET developers
-    // This gives us access to Rider-specific APIs and the ReSharper backend
-    type.set("RD")
-    
-    // Additional plugins we depend on
-    plugins.set(listOf("Git4Idea"))
-    
-    // Download sources for better IDE support during development
-    downloadSources.set(true)
+intellijPlatform {
+    pluginConfiguration {
+        name = "Sidekick"
+        
+        ideaVersion {
+            // Minimum supported IDE build number (2024.1.x)
+            sinceBuild = "241"
+            
+            // Maximum supported IDE build number (up to 2024.3.x)
+            // Using wildcard to support all minor versions in the 243 series
+            untilBuild = "243.*"
+        }
+    }
 }
 
 // -----------------------------------------------------------------------------
 // Build Tasks Configuration
 // -----------------------------------------------------------------------------
 tasks {
-    // Configure plugin.xml patching with version compatibility
-    patchPluginXml {
-        // Minimum supported IDE build number (2024.1.x)
-        sinceBuild.set("241")
-        
-        // Maximum supported IDE build number (up to 2024.3.x)
-        // Using wildcard to support all minor versions in the 243 series
-        untilBuild.set("243.*")
-    }
-    
     // Ensure we're using UTF-8 for all Java compilation
     withType<JavaCompile> {
         options.encoding = "UTF-8"
@@ -132,9 +142,9 @@ tasks {
     
     // Configure Kotlin compilation options
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions {
+        compilerOptions {
             // Enable strict null-safety warnings
-            freeCompilerArgs = listOf("-Xjsr305=strict")
+            freeCompilerArgs.add("-Xjsr305=strict")
         }
     }
     

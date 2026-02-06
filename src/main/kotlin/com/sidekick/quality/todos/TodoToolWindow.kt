@@ -152,7 +152,7 @@ class TodoPanel(private val project: Project) : JBPanel<TodoPanel>() {
         // Sort by priority (highest first), then by deadline
         val sorted = filtered.sortedWith(
             compareByDescending<TodoItem> { it.priority.weight }
-                .thenBy { it.deadline ?: LocalDate.MAX }
+                .thenBy { it.deadline ?: MAX_DATE }
         )
 
         sorted.forEach { todo ->
@@ -207,13 +207,12 @@ class TodoPanel(private val project: Project) : JBPanel<TodoPanel>() {
 
         return filtered.sortedWith(
             compareByDescending<TodoItem> { it.priority.weight }
-                .thenBy { it.deadline ?: LocalDate.MAX }
+                .thenBy { it.deadline ?: MAX_DATE }
         )
     }
 
     companion object {
-        private val LocalDate.Companion.MAX: LocalDate
-            get() = LocalDate.of(9999, 12, 31)
+        private val MAX_DATE: LocalDate = LocalDate.of(9999, 12, 31)
     }
 }
 

@@ -58,7 +58,7 @@ data class AgentTask(
      * Whether the task is still running.
      */
     val isActive: Boolean
-        get() = status in listOf(TaskStatus.PLANNING, TaskStatus.EXECUTING, TaskStatus.AWAITING_CONFIRMATION)
+        get() = !status.isTerminal
 
     /**
      * Whether the task completed successfully.

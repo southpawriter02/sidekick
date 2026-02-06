@@ -26,3 +26,14 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
+// -----------------------------------------------------------------------------
+// Toolchain Management - Auto-download JDKs
+// -----------------------------------------------------------------------------
+// This enables Gradle to automatically download required JDK versions (e.g., JDK 17)
+// when they're not installed locally. This is essential when running on JDK 25
+// but targeting JDK 17 for IntelliJ Platform plugin development.
+// -----------------------------------------------------------------------------
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}

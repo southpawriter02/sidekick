@@ -36,7 +36,7 @@ class LmStudioSettingsConfigurable : Configurable {
     private var autoDiscoverCheckbox = JBCheckBox("Auto-discover servers")
     private var connectionTimeoutField = JBTextField()
     private var requestTimeoutField = JBTextField()
-    private var modelComboBox = JComboBox<String>()
+    private var modelComboBox = com.intellij.openapi.ui.ComboBox<String>()
     private var statusLabel = JBLabel("Not connected")
 
     private var mainPanel: DialogPanel? = null

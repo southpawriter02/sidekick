@@ -100,9 +100,11 @@ class DeadCodePanel(private val project: Project) : JBPanel<DeadCodePanel>() {
             button("🔄 Refresh") { refreshList() }
 
             label(" Filter: ")
-            comboBox(DeadCodeFilter.entries.toList()).onChanged { filter ->
-                currentFilter = filter ?: DeadCodeFilter.ALL
-                refreshList()
+            comboBox(DeadCodeFilter.entries.toList()).applyToComponent {
+                addActionListener {
+                    currentFilter = selectedItem as? DeadCodeFilter ?: DeadCodeFilter.ALL
+                    refreshList()
+                }
             }
         }
     }

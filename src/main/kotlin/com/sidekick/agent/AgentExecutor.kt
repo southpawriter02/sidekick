@@ -4,7 +4,9 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.sidekick.agent.tasks.*
-import com.sidekick.agent.tools.*
+import com.sidekick.agent.tools.AgentTool as AgentToolDef
+import com.sidekick.agent.tools.BuiltInTools
+import com.sidekick.agent.tools.ToolCallRequest as ToolsCallRequest
 import com.sidekick.llm.provider.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -65,7 +67,7 @@ class AgentExecutor(private val project: Project) {
     private val taskHistory = mutableListOf<AgentTask>()
 
     // Available tools
-    private val tools: List<AgentTool> = BuiltInTools.ALL
+    private val tools: List<AgentToolDef> = BuiltInTools.ALL
 
     // Event listeners
     private val eventListeners = mutableListOf<(TaskEvent) -> Unit>()
@@ -110,11 +112,12 @@ class AgentExecutor(private val project: Project) {
 
             while (stepCount < task.constraints.maxSteps) {
                 // Get next action from LLM
+                val providerTools = getToolsForTask(task).map { it.toProviderTool() }
                 val response = provider.chat(
                     UnifiedChatRequest(
                         model = "", // Will use default from provider
-                        messages = messages,
-                        tools = getToolsForTask(task).map { it.toProviderTool() }
+                        messages = messages.toList(),
+                        tools = providerTools
                     )
                 )
 
@@ -125,11 +128,12 @@ class AgentExecutor(private val project: Project) {
                 }
 
                 // Process tool calls
-                for (toolCall in response.toolCalls) {
+                for (toolCall in response.toolCalls ?: emptyList()) {
                     emitEvent(TaskEvent.StepStarted(task.id, stepCount, AgentAction.TOOL_CALL))
 
                     val stepStart = System.currentTimeMillis()
-                    val step = executeToolCall(stepCount, toolCall, task.constraints)
+                    val parsedArgs = toolCall.parseArguments()
+                    val step = executeToolCall(stepCount, toolCall.name, parsedArgs, task.constraints)
                     val stepDuration = System.currentTimeMillis() - stepStart
 
                     steps.add(step.copy(durationMs = stepDuration))
@@ -150,7 +154,7 @@ class AgentExecutor(private val project: Project) {
                     // Add tool result to messages
                     messages.add(UnifiedMessage.tool(
                         step.result ?: "",
-                        listOf(com.sidekick.llm.provider.ToolResult(
+                        listOf(ToolResult(
                             toolCall.id,
                             step.result ?: ""
                         ))
@@ -188,11 +192,12 @@ class AgentExecutor(private val project: Project) {
      */
     private suspend fun executeToolCall(
         stepId: Int,
-        toolCall: ToolCallRequest,
+        toolName: String,
+        arguments: Map<String, Any>,
         constraints: TaskConstraints
     ): TaskStep {
-        val tool = BuiltInTools.findByName(toolCall.name)
-            ?: return TaskStep.error(stepId, "Unknown tool: ${toolCall.name}")
+        val tool = BuiltInTools.findByName(toolName)
+            ?: return TaskStep.error(stepId, "Unknown tool: $toolName")
 
         // Check constraints
         if (tool.isDestructive && !constraints.allowFileModification) {
@@ -216,11 +221,11 @@ class AgentExecutor(private val project: Project) {
 
         // Execute tool
         return try {
-            val result = tool.handler(toolCall.arguments)
+            val result = tool.handler(arguments)
             TaskStep.toolCall(
                 id = stepId,
                 toolName = tool.name,
-                toolArgs = toolCall.arguments,
+                toolArgs = arguments,
                 reasoning = "Executing ${tool.name}",
                 result = result.output,
                 success = result.success
@@ -233,7 +238,7 @@ class AgentExecutor(private val project: Project) {
     /**
      * Gets tools available for a task based on constraints.
      */
-    private fun getToolsForTask(task: AgentTask): List<AgentTool> {
+    private fun getToolsForTask(task: AgentTask): List<AgentToolDef> {
         return tools.filter { tool ->
             when {
                 tool.isDestructive && !task.constraints.allowFileModification -> false

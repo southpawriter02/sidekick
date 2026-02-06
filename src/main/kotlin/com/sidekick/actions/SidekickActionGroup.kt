@@ -16,7 +16,7 @@
 
 package com.sidekick.actions
 
-import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -28,7 +28,7 @@ import com.intellij.openapi.project.Project
  * Appears in the editor context menu under "Sidekick" with
  * dynamic children based on available actions.
  */
-class SidekickActionGroup : ActionGroup() {
+class SidekickActionGroup : DefaultActionGroup() {
     
     override fun getActionUpdateThread(): ActionUpdateThread {
         return ActionUpdateThread.BGT

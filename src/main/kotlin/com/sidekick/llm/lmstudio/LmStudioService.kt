@@ -28,7 +28,7 @@ import java.time.Instant
  *
  * ## API Compatibility
  *
- * LM Studio exposes an OpenAI-compatible API at `/v1/*` endpoints:
+ * LM Studio exposes an OpenAI-compatible API at /v1/ endpoints:
  * - GET /v1/models - List available models
  * - POST /v1/chat/completions - Chat completion
  * - POST /v1/embeddings - Generate embeddings
@@ -351,7 +351,7 @@ class LmStudioService : PersistentStateComponent<LmStudioService.State> {
         val modelId = model ?: state.preferredModel ?: listModels().firstOrNull()?.id
             ?: throw LmStudioException("No model available")
 
-        val requestBody = """{"model": "$modelId", "input": "${escapeJson(text)}"}"""
+        val requestBody = "{\"model\": \"$modelId\", \"input\": \"${escapeJson(text)}\"}"
 
         val url = URL("${config.baseUrl}/embeddings")
         val connection = url.openConnection() as HttpURLConnection
@@ -425,16 +425,16 @@ class LmStudioService : PersistentStateComponent<LmStudioService.State> {
 
     private fun buildChatRequestJson(request: ChatCompletionRequest): String {
         val messagesJson = request.messages.joinToString(",") { msg ->
-            """{"role": "${msg.role}", "content": "${escapeJson(msg.content ?: "")}"}"""
+            "{\"role\": \"${msg.role}\", \"content\": \"${escapeJson(msg.content ?: "")}\"}"
         }
 
         return buildString {
             append("{")
-            append(""""model": "${request.model}",""")
-            append(""""messages": [$messagesJson],""")
-            append(""""temperature": ${request.temperature},""")
-            append(""""stream": ${request.stream}""")
-            request.maxTokens?.let { append(""","max_tokens": $it""") }
+            append("\"model\": \"${request.model}\",")
+            append("\"messages\": [$messagesJson],")
+            append("\"temperature\": ${request.temperature},")
+            append("\"stream\": ${request.stream}")
+            request.maxTokens?.let { append(",\"max_tokens\": $it") }
             append("}")
         }
     }
@@ -443,7 +443,7 @@ class LmStudioService : PersistentStateComponent<LmStudioService.State> {
         // Simple parsing - in production use kotlinx.serialization
         val models = mutableListOf<LmStudioModel>()
 
-        val dataRegex = """"id"\s*:\s*"([^"]+)"""".toRegex()
+        val dataRegex = "\"id\"\\s*:\\s*\"([^\"]+)\"".toRegex()
         dataRegex.findAll(json).forEach { match ->
             val id = match.groupValues[1]
             val family = LmStudioModel.inferFamily(id)
@@ -465,9 +465,9 @@ class LmStudioService : PersistentStateComponent<LmStudioService.State> {
 
     private fun parseChatResponse(json: String): ChatCompletionResponse {
         // Simple parsing
-        val idMatch = """"id"\s*:\s*"([^"]+)"""".toRegex().find(json)
-        val contentMatch = """"content"\s*:\s*"([^"]*?)"""".toRegex().find(json)
-        val modelMatch = """"model"\s*:\s*"([^"]+)"""".toRegex().find(json)
+        val idMatch = "\"id\"\\s*:\\s*\"([^\"]+)\"".toRegex().find(json)
+        val contentMatch = "\"content\"\\s*:\\s*\"([^\"]*?)\"".toRegex().find(json)
+        val modelMatch = "\"model\"\\s*:\\s*\"([^\"]+)\"".toRegex().find(json)
 
         return ChatCompletionResponse(
             id = idMatch?.groupValues?.get(1) ?: "",
@@ -482,18 +482,18 @@ class LmStudioService : PersistentStateComponent<LmStudioService.State> {
     }
 
     private fun parseStreamingContent(json: String): String? {
-        val contentMatch = """"content"\s*:\s*"([^"]*?)"""".toRegex().find(json)
+        val contentMatch = "\"content\"\\s*:\\s*\"([^\"]*?)\"".toRegex().find(json)
         return contentMatch?.groupValues?.get(1)?.let { unescapeJson(it) }
     }
 
     private fun parseLoadedModel(json: String): String? {
-        val idMatch = """"id"\s*:\s*"([^"]+)"""".toRegex().find(json)
+        val idMatch = "\"id\"\\s*:\\s*\"([^\"]+)\"".toRegex().find(json)
         return idMatch?.groupValues?.get(1)
     }
 
     private fun parseEmbeddingResponse(json: String): List<Float> {
         // Simple parsing of embedding array
-        val embeddingMatch = """\[([0-9.,\s-]+)\]""".toRegex().find(json)
+        val embeddingMatch = "\\[([0-9.,\\s-]+)\\]".toRegex().find(json)
         return embeddingMatch?.groupValues?.get(1)
             ?.split(",")
             ?.mapNotNull { it.trim().toFloatOrNull() }

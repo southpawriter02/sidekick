@@ -140,6 +140,9 @@ class ChatPanel(
         Disposer.register(this, controller)
         Disposer.register(this, modelSelector)
         
+        // Refresh model list when server comes online
+        controller.onConnected = { modelSelector.refreshModels() }
+        
         // Build the UI layout
         setupLayout()
         

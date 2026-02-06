@@ -12,6 +12,7 @@
 // - Error messages: Left-aligned with red/orange background
 // - Supports text appending for streaming responses
 // - Uses antialiased rendering for smooth corners
+// - Text wraps within the bubble at 80% of the parent's width
 // =============================================================================
 
 package com.sidekick.ui
@@ -38,7 +39,7 @@ class MessageBubble(
     initialText: String,
     private val isUser: Boolean,
     private val isError: Boolean = false
-) : JPanel(BorderLayout()) {
+) : JPanel() {
 
     companion object {
         // Color scheme for light and dark themes
@@ -83,6 +84,7 @@ class MessageBubble(
     
     /**
      * The text pane displaying the message content.
+     * Text wrapping is handled by constraining the pane's width in doLayout.
      */
     private val textPane = JTextPane().apply {
         isEditable = false
@@ -99,7 +101,7 @@ class MessageBubble(
     }
     
     /**
-     * Content panel that holds the text pane with background color.
+     * Content panel that holds the text pane with a rounded background.
      */
     private val contentPanel = object : JPanel(BorderLayout()) {
         override fun paintComponent(g: Graphics) {
@@ -124,18 +126,16 @@ class MessageBubble(
     
     init {
         isOpaque = false
+        layout = BorderLayout()
         border = JBUI.Borders.empty(4, 8)
         
-        // Create alignment wrapper
-        val alignmentPanel = JPanel(FlowLayout(
-            if (isUser) FlowLayout.RIGHT else FlowLayout.LEFT,
-            0, 0
-        )).apply {
+        // Use a simple wrapper that respects alignment via BorderLayout position
+        val wrapper = JPanel(BorderLayout()).apply {
             isOpaque = false
-            add(contentPanel)
+            add(contentPanel, if (isUser) BorderLayout.EAST else BorderLayout.WEST)
         }
         
-        add(alignmentPanel, BorderLayout.CENTER)
+        add(wrapper, BorderLayout.CENTER)
         
         // Set initial text
         if (initialText.isNotEmpty()) {
@@ -158,6 +158,8 @@ class MessageBubble(
             StyleConstants.setForeground(this, textPane.foreground)
         }
         doc.insertString(doc.length, text, attrs)
+        revalidate()
+        repaint()
     }
     
     /**
@@ -190,19 +192,26 @@ class MessageBubble(
     }
     
     // -------------------------------------------------------------------------
-    // Layout
+    // Layout — constrain bubble width so JTextPane wraps text
     // -------------------------------------------------------------------------
     
     override fun getPreferredSize(): Dimension {
         val parentWidth = parent?.width ?: 400
-        val maxWidth = (parentWidth * MAX_WIDTH_RATIO).toInt()
+        val maxBubbleWidth = (parentWidth * MAX_WIDTH_RATIO).toInt()
         
-        // Get text preferred size
-        val textSize = textPane.preferredSize
+        // Give the text pane a constrained width so it can compute wrapped height
+        textPane.setSize(maxBubbleWidth - 32, Short.MAX_VALUE.toInt())
+        val textPref = textPane.preferredSize
         
-        // Constrain width
-        val bubbleWidth = minOf(textSize.width + 32, maxWidth)
+        // Bubble width is the lesser of natural width or max
+        val bubbleWidth = minOf(textPref.width + 32, maxBubbleWidth)
+        val bubbleHeight = textPref.height + 8  // padding for border
         
-        return Dimension(parentWidth, textSize.height + 24)
+        return Dimension(parentWidth, bubbleHeight)
+    }
+    
+    override fun getMaximumSize(): Dimension {
+        val pref = preferredSize
+        return Dimension(Int.MAX_VALUE, pref.height)
     }
 }

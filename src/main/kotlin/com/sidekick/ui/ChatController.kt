@@ -59,7 +59,7 @@ class ChatController(
         private const val DEFAULT_MODEL = "llama3.2"
         
         // Polling interval for connection status (ms)
-        private const val STATUS_POLL_INTERVAL_MS = 30_000L
+        private const val STATUS_POLL_INTERVAL_MS = 10_000L
     }
 
     // -------------------------------------------------------------------------
@@ -116,6 +116,18 @@ class ChatController(
      */
     @Volatile
     private var isProcessing = false
+    
+    /**
+     * Previous connection status, used to detect transitions.
+     */
+    @Volatile
+    private var previousConnectionStatus: ConnectionStatus = ConnectionStatus.NOT_CONFIGURED
+    
+    /**
+     * Callback invoked when connection status transitions to CONNECTED.
+     * Used by ChatPanel to trigger model list refresh.
+     */
+    var onConnected: (() -> Unit)? = null
 
     // -------------------------------------------------------------------------
     // Initialization
@@ -363,9 +375,17 @@ class ChatController(
             val service = getOllamaService()
             val status = service.getConnectionStatus()
             chatPanel.updateConnectionStatus(status)
+            
+            // Refresh models when connection transitions to CONNECTED
+            if (status == ConnectionStatus.CONNECTED && previousConnectionStatus != ConnectionStatus.CONNECTED) {
+                LOG.info("Connection established — refreshing model list")
+                onConnected?.invoke()
+            }
+            previousConnectionStatus = status
         } catch (e: Exception) {
             LOG.debug("Failed to get connection status: ${e.message}")
             chatPanel.updateConnectionStatus(ConnectionStatus.DISCONNECTED)
+            previousConnectionStatus = ConnectionStatus.DISCONNECTED
         }
     }
 

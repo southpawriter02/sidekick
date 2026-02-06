@@ -27,8 +27,8 @@ The IntelliJ Platform uses this file to:
     <name>Sidekick</name>
     
     <!-- Plugin vendor information -->
-    <vendor email="support@sidekick.dev" url="https://github.com/ryan/sidekick">
-        Sidekick Contributors
+    <vendor email="ryan@southpawriter.com" url="https://github.com/southpawriter02/sidekick">
+        Ryan Goodrich
     </vendor>
 
     <!--
@@ -44,28 +44,36 @@ The IntelliJ Platform uses this file to:
         <p>
             Sidekick brings AI-powered code assistance directly into JetBrains Rider,
             with a focus on <strong>privacy</strong> and <strong>local inference</strong>.
+            Your code never leaves your machine.
         </p>
         
         <h3>Key Features</h3>
         <ul>
-            <li><strong>Local LLM Integration:</strong> Connect to Ollama for private, 
-                on-device AI assistance - your code never leaves your machine</li>
+            <li><strong>Multi-Backend LLM Support:</strong> Connect to 
+                <a href="https://ollama.ai">Ollama</a> or 
+                <a href="https://lmstudio.ai">LM Studio</a> for private, 
+                on-device AI assistance</li>
             <li><strong>Context-Aware Chat:</strong> Ask questions about your code with
                 automatic context injection from your current file and project</li>
             <li><strong>Streaming Responses:</strong> See AI responses in real-time as
-                they're generated, just like ChatGPT</li>
+                they're generated</li>
+            <li><strong>Model Switching:</strong> Quickly switch between installed models
+                from the chat toolbar</li>
+            <li><strong>Auto-Detection:</strong> Server connection is monitored 
+                automatically — models refresh when your LLM server comes online</li>
         </ul>
         
         <h3>Requirements</h3>
         <ul>
             <li>JetBrains Rider 2024.1 or later</li>
-            <li><a href="https://ollama.ai">Ollama</a> installed and running locally</li>
+            <li><a href="https://ollama.ai">Ollama</a> and/or 
+                <a href="https://lmstudio.ai">LM Studio</a> installed and running</li>
         </ul>
         
         <h3>Getting Started</h3>
         <ol>
-            <li>Install Ollama from <a href="https://ollama.ai">ollama.ai</a></li>
-            <li>Pull a model: <code>ollama pull llama3.2</code></li>
+            <li>Install Ollama or LM Studio</li>
+            <li>Pull a model (e.g., <code>ollama pull llama3.2</code>)</li>
             <li>Open the Sidekick tool window (View → Tool Windows → Sidekick)</li>
             <li>Start chatting with your local AI!</li>
         </ol>

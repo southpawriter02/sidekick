@@ -165,6 +165,8 @@ The chat panel lacks keyboard shortcuts for common actions: `Ctrl+Enter` to send
 
 ### 18. **Chat Export to Markdown**
 
+COMPLETED
+
 Add an "Export Conversation" action that saves the entire chat thread (with code blocks, context, and timestamps) as a well-formatted Markdown file. Useful for documentation, PR descriptions, or sharing with teammates.
 
 - **Why now:** Chat history exists in memory but there's no user-facing export path.
@@ -182,6 +184,8 @@ When the user selects a model that isn't yet pulled locally, `ModelSelectorWidge
 ---
 
 ### 20. **Collapsible Context Sections in Chat**
+
+COMPLETED
 
 When the system prompt includes large context blocks (file content, search results, project summary), render them as collapsible `<details>` sections in the chat bubble so the conversation doesn't become unwieldy.
 

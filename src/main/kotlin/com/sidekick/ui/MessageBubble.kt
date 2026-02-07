@@ -80,6 +80,15 @@ class MessageBubble(
         private const val MAX_WIDTH_RATIO = 0.8  // Max 80% of parent width
     }
 
+    /**
+     * Raw text preserved for clipboard copy and export.
+     * Set in [markComplete] before the textPane is potentially replaced
+     * by structured components.
+     *
+     * @since 1.1.2
+     */
+    private var rawText: String? = null
+
     // -------------------------------------------------------------------------
     // Components
     // -------------------------------------------------------------------------
@@ -122,6 +131,18 @@ class MessageBubble(
         addActionListener { copyAsMarkdown() }
     }
 
+    /**
+     * Body panel within contentPanel that holds either the textPane
+     * or the structured block layout. Swapped in [markComplete].
+     *
+     * @since 1.1.2
+     */
+    private val bodyPanel = JPanel().apply {
+        layout = BoxLayout(this, BoxLayout.Y_AXIS)
+        isOpaque = false
+        add(textPane)
+    }
+
     private val contentPanel = object : JPanel(BorderLayout()) {
         override fun paintComponent(g: Graphics) {
             val g2 = g as Graphics2D
@@ -136,7 +157,7 @@ class MessageBubble(
         }
     }.apply {
         isOpaque = false
-        add(textPane, BorderLayout.CENTER)
+        add(bodyPanel, BorderLayout.CENTER)
 
         // Bottom bar with the copy button, right-aligned
         val bottomBar = JPanel(FlowLayout(FlowLayout.RIGHT, 4, 0)).apply {
@@ -191,21 +212,31 @@ class MessageBubble(
     /**
      * Marks the message as complete.
      *
-     * Reveals the "Copy as Markdown" button so users can copy the
-     * fully-streamed response to the clipboard.
-     *
-     * @since 1.1.1
+     * 1. Reveals the "Copy as Markdown" button (v1.1.1)
+     * 2. Parses the message into content blocks and replaces large code
+     *    blocks with [CollapsibleSection] components (v1.1.2)
      */
     fun markComplete() {
+        // Preserve raw text before any body reconstruction
+        rawText = textPane.text
+
         copyButton.isVisible = true
+
+        // Only attempt collapsible rewrite for non-user messages
+        if (!isUser) {
+            rebuildBodyWithCollapsibleSections()
+        }
+
         revalidate()
         repaint()
     }
     
     /**
      * Gets the full message text.
+     * Returns the preserved raw text after [markComplete], or the live
+     * textPane content while still streaming.
      */
-    fun getText(): String = textPane.text
+    fun getText(): String = rawText ?: textPane.text
 
     /**
      * Creates an [ExportableMessage] DTO from this bubble's state.
@@ -233,6 +264,79 @@ class MessageBubble(
         Timer(1500) { copyButton.toolTipText = original }.apply {
             isRepeats = false
             start()
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Collapsible Section Rebuild (v1.1.2)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Parses the accumulated text into [ContentBlock]s and rebuilds the
+     * body panel, replacing large code blocks with [CollapsibleSection].
+     *
+     * If no blocks exceed the threshold, the body is left unchanged.
+     */
+    private fun rebuildBodyWithCollapsibleSections() {
+        val text = rawText ?: return
+        val blocks = ContentBlockParser.parse(text)
+
+        // Check if any block needs collapsing
+        val hasCollapsible = blocks.any {
+            it is ContentBlock.CodeFence && ContentBlockParser.shouldCollapse(it)
+        }
+        if (!hasCollapsible) return
+
+        // Determine foreground color for the sections
+        val fg = when {
+            isError -> ERROR_FG
+            else    -> ASSISTANT_FG
+        }
+
+        // Rebuild
+        bodyPanel.removeAll()
+
+        for (block in blocks) {
+            when (block) {
+                is ContentBlock.Text -> {
+                    val pane = createTextPane(block.content, fg)
+                    bodyPanel.add(pane)
+                }
+                is ContentBlock.CodeFence -> {
+                    if (ContentBlockParser.shouldCollapse(block)) {
+                        val title = block.language.ifEmpty { "Code" }
+                        val section = CollapsibleSection(
+                            title = title,
+                            content = block.code,
+                            lineCount = block.lineCount,
+                            foreground = fg
+                        )
+                        bodyPanel.add(section)
+                    } else {
+                        // Small code block — render inline with fence markers
+                        val fenced = "```${block.language}\n${block.code}\n```"
+                        val pane = createTextPane(fenced, fg)
+                        bodyPanel.add(pane)
+                    }
+                }
+            }
+        }
+
+        bodyPanel.revalidate()
+        bodyPanel.repaint()
+    }
+
+    /**
+     * Creates a styled, non-editable [JTextPane] for inline text blocks.
+     */
+    private fun createTextPane(text: String, fg: Color): JTextPane {
+        return JTextPane().apply {
+            isEditable = false
+            isOpaque = false
+            border = JBUI.Borders.empty(4, 14)
+            font = JBUI.Fonts.label(13f)
+            foreground = fg
+            this.text = text
         }
     }
 

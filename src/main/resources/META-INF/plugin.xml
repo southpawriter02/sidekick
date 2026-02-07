@@ -86,6 +86,13 @@ The IntelliJ Platform uses this file to:
     Version history shown in the plugin details.
     -->
     <change-notes><![CDATA[
+        <h3>v1.1.2 - Collapsible Context Sections</h3>
+        <ul>
+            <li><strong>Auto-collapse large code blocks:</strong> Code blocks with 8+ lines
+                are automatically collapsed behind a clickable header when streaming finishes.
+                Click to expand/collapse.</li>
+        </ul>
+
         <h3>v1.1.1 - Chat Export to Markdown</h3>
         <ul>
             <li><strong>Per-bubble copy:</strong> Each chat bubble now has a "Copy as Markdown"

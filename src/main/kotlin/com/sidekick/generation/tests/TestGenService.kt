@@ -16,19 +16,16 @@
 
 package com.sidekick.generation.tests
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.sidekick.context.EditorContextService
 import com.sidekick.context.ProjectContextService
 import com.sidekick.context.SymbolContext
-import com.sidekick.services.ollama.OllamaService
-import com.sidekick.services.ollama.models.ChatMessage
-import com.sidekick.services.ollama.models.ChatOptions
-import com.sidekick.services.ollama.models.ChatRequest
+import com.sidekick.llm.provider.ProviderManager
+import com.sidekick.llm.provider.UnifiedChatRequest
+import com.sidekick.llm.provider.UnifiedMessage
 import com.sidekick.settings.SidekickSettings
-import kotlinx.coroutines.flow.toList
 
 /**
  * Service for generating unit tests using LLM.
@@ -238,29 +235,20 @@ class TestGenService(private val project: Project) {
     }
 
     private suspend fun callLLM(prompt: String): String {
-        val ollamaService = ApplicationManager.getApplication()
-            .getService(OllamaService::class.java)
+        val providerManager = ProviderManager.getInstance()
         val settings = SidekickSettings.getInstance()
-        
-        val messages = listOf(
-            ChatMessage.system("You are a test generator. Generate only test code with imports, no explanations."),
-            ChatMessage.user(prompt)
-        )
-        
-        val options = ChatOptions(
-            temperature = 0.3,
-            numPredict = 1500  // Tests can be longer
-        )
-        
-        val request = ChatRequest(
+
+        val request = UnifiedChatRequest(
             model = settings.defaultModel.ifEmpty { "llama3.2" },
-            messages = messages,
-            stream = false,
-            options = options
+            messages = listOf(UnifiedMessage.user(prompt)),
+            systemPrompt = "You are a test generator. Generate only test code with imports, no explanations.",
+            temperature = 0.3f,
+            maxTokens = 1500,
+            stream = false
         )
-        
-        val responses = ollamaService.chat(request).toList()
-        return responses.joinToString("") { it.message.content }
+
+        val response = providerManager.chat(request)
+        return response.content ?: ""
     }
 
     private fun formatTestCode(raw: String, framework: TestFramework): String {

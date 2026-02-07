@@ -16,17 +16,14 @@
 
 package com.sidekick.generation.naming
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.sidekick.context.EditorContextService
-import com.sidekick.services.ollama.OllamaService
-import com.sidekick.services.ollama.models.ChatMessage
-import com.sidekick.services.ollama.models.ChatOptions
-import com.sidekick.services.ollama.models.ChatRequest
+import com.sidekick.llm.provider.ProviderManager
+import com.sidekick.llm.provider.UnifiedChatRequest
+import com.sidekick.llm.provider.UnifiedMessage
 import com.sidekick.settings.SidekickSettings
-import kotlinx.coroutines.flow.toList
 
 /**
  * Service for generating variable naming suggestions.
@@ -176,29 +173,20 @@ class NamingService(private val project: Project) {
     }
 
     private suspend fun callLLM(prompt: String): String {
-        val ollamaService = ApplicationManager.getApplication()
-            .getService(OllamaService::class.java)
+        val providerManager = ProviderManager.getInstance()
         val settings = SidekickSettings.getInstance()
-        
-        val messages = listOf(
-            ChatMessage.system("You are a naming assistant. Reply only with JSON arrays, no markdown."),
-            ChatMessage.user(prompt)
-        )
-        
-        val options = ChatOptions(
-            temperature = 0.5,  // Slightly higher for variety
-            numPredict = 400
-        )
-        
-        val request = ChatRequest(
+
+        val request = UnifiedChatRequest(
             model = settings.defaultModel.ifEmpty { "llama3.2" },
-            messages = messages,
-            stream = false,
-            options = options
+            messages = listOf(UnifiedMessage.user(prompt)),
+            systemPrompt = "You are a naming assistant. Reply only with JSON arrays, no markdown.",
+            temperature = 0.5f,
+            maxTokens = 400,
+            stream = false
         )
-        
-        val responses = ollamaService.chat(request).toList()
-        return responses.joinToString("") { it.message.content }
+
+        val response = providerManager.chat(request)
+        return response.content ?: ""
     }
 
     private fun parseResponse(response: String, convention: NamingConvention): List<NameSuggestion> {

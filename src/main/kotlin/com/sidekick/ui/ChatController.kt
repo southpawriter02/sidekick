@@ -1,11 +1,11 @@
 // =============================================================================
 // ChatController.kt
 // =============================================================================
-// Controller handling chat business logic and Ollama communication.
+// Controller handling chat business logic and LLM provider communication.
 //
 // This class:
 // - Manages conversation history
-// - Communicates with OllamaService for chat completions
+// - Communicates with ProviderManager for chat completions
 // - Handles streaming responses and updates the UI
 // - Manages connection status polling
 //
@@ -19,18 +19,18 @@
 package com.sidekick.ui
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.sidekick.context.CodebaseSearchService
 import com.sidekick.context.ContextBuilder
 import com.sidekick.context.EditorContextService
 import com.sidekick.context.ProjectContextService
 import com.sidekick.history.ChatHistoryService
-import com.sidekick.services.ollama.OllamaService
-import com.sidekick.services.ollama.models.ChatMessage
-import com.sidekick.services.ollama.models.ChatOptions
-import com.sidekick.services.ollama.models.ChatRequest
-import com.sidekick.services.ollama.models.ConnectionStatus
+import com.sidekick.llm.provider.ProviderManager
+import com.sidekick.llm.provider.MessageRole
+import com.sidekick.llm.provider.UnifiedChatRequest
+import com.sidekick.llm.provider.UnifiedMessage
+import com.sidekick.models.ConnectionStatus
 import com.sidekick.settings.SidekickSettings
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
@@ -41,8 +41,8 @@ import java.util.concurrent.ConcurrentLinkedQueue
 /**
  * Controller for the chat interface.
  *
- * Manages the conversation state, communicates with the Ollama service,
- * and coordinates UI updates in the ChatPanel.
+ * Manages the conversation state, communicates with LLM providers via
+ * ProviderManager, and coordinates UI updates in the ChatPanel.
  *
  * @property project The current project context
  * @property chatPanel The panel to update with messages and status
@@ -65,12 +65,12 @@ class ChatController(
     // -------------------------------------------------------------------------
     // Service Access
     // -------------------------------------------------------------------------
-    
+
     /**
-     * Gets the OllamaService instance.
+     * Gets the ProviderManager instance.
      */
-    private fun getOllamaService(): OllamaService {
-        return ApplicationManager.getApplication().getService(OllamaService::class.java)
+    private fun getProviderManager(): ProviderManager {
+        return ProviderManager.getInstance()
     }
 
     // -------------------------------------------------------------------------
@@ -104,7 +104,7 @@ class ChatController(
      * Message history for the current conversation.
      * Thread-safe queue for concurrent access.
      */
-    private val messageHistory = ConcurrentLinkedQueue<ChatMessage>()
+    private val messageHistory = ConcurrentLinkedQueue<UnifiedMessage>()
     
     /**
      * Currently selected model name.
@@ -135,25 +135,26 @@ class ChatController(
     
     init {
         LOG.info("Initializing ChatController for project: ${project.name}")
-        
+
         // Start connection status polling
         startStatusPolling()
-        
-        // Load settings and configure Ollama service
+
+        // Initialize providers and load settings
         chatScope.launch {
             try {
                 val settings = SidekickSettings.getInstance()
-                val service = getOllamaService()
-                service.configure(settings.ollamaUrl)
-                
+
+                // Ensure ProviderManager is initialized (registers providers)
+                getProviderManager()
+
                 // Load default model from settings
                 if (settings.defaultModel.isNotEmpty()) {
                     selectedModel = settings.defaultModel
                 }
-                
+
                 updateConnectionStatus()
             } catch (e: Exception) {
-                LOG.warn("Failed to configure Ollama service: ${e.message}")
+                LOG.warn("Failed to initialize providers: ${e.message}")
             }
         }
     }
@@ -176,7 +177,7 @@ class ChatController(
         LOG.info("Sending message: ${userMessage.take(50)}...")
         
         // Add user message to history
-        messageHistory.add(ChatMessage.user(userMessage))
+        messageHistory.add(UnifiedMessage.user(userMessage))
         
         // Persist to chat history (v0.2.5)
         try {
@@ -216,7 +217,7 @@ class ChatController(
     /**
      * Sets the model to use for chat.
      *
-     * @param modelName The Ollama model name (e.g., "llama3.2")
+     * @param modelName The model name (e.g., "llama3.2")
      */
     fun setModel(modelName: String) {
         selectedModel = modelName
@@ -228,41 +229,34 @@ class ChatController(
     // -------------------------------------------------------------------------
     
     /**
-     * Streams the chat response from Ollama.
+     * Streams the chat response from the active LLM provider.
      */
     private suspend fun streamChatResponse() {
-        val service = getOllamaService()
+        val providerManager = getProviderManager()
         val settings = SidekickSettings.getInstance()
-        
-        // Build context-enriched system prompt (v0.2.2)
-        val systemPrompt = buildContextualSystemPrompt(settings)
-        
-        // Build message list with context-enriched system prompt
-        val messages = mutableListOf<ChatMessage>()
-        if (systemPrompt.isNotEmpty()) {
-            messages.add(ChatMessage.system(systemPrompt))
-        }
-        messages.addAll(messageHistory)
-        
-        // Build chat options from settings
-        val options = ChatOptions(
-            temperature = settings.temperature,
-            numPredict = settings.maxTokens
-        )
-        
-        // Build the chat request
-        val request = ChatRequest(
+
+        // Build context-enriched system prompt (v0.2.2, v1.0.6 codebase search)
+        val latestUserMessage = messageHistory.lastOrNull { it.role == MessageRole.USER }?.content ?: ""
+        val systemPrompt = buildContextualSystemPrompt(settings, latestUserMessage)
+
+        // Build message list (system prompt is passed separately on the request)
+        val messages = messageHistory.toList()
+
+        // Build the unified chat request
+        val request = UnifiedChatRequest(
             model = selectedModel,
             messages = messages,
-            stream = settings.streamingEnabled,
-            options = options
+            temperature = settings.temperature.toFloat(),
+            maxTokens = settings.maxTokens,
+            systemPrompt = systemPrompt.ifEmpty { null },
+            stream = settings.streamingEnabled
         )
-        
+
         // Accumulate the full response for history
         val responseBuilder = StringBuilder()
-        
+
         try {
-            service.chat(request)
+            providerManager.streamChat(request)
                 .onStart {
                     LOG.debug("Starting chat stream")
                     chatPanel.startAssistantMessage()
@@ -270,11 +264,10 @@ class ChatController(
                 .onCompletion { cause ->
                     if (cause == null) {
                         LOG.debug("Chat stream completed successfully")
-                        // Add assistant message to history
                         val fullResponse = responseBuilder.toString()
                         if (fullResponse.isNotEmpty()) {
-                            messageHistory.add(ChatMessage.assistant(fullResponse))
-                            
+                            messageHistory.add(UnifiedMessage.assistant(fullResponse))
+
                             // Persist to chat history (v0.2.5)
                             try {
                                 ChatHistoryService.getInstance(project)
@@ -289,7 +282,7 @@ class ChatController(
                     } else {
                         LOG.warn("Chat stream failed: ${cause.message}")
                     }
-                    
+
                     isProcessing = false
                     chatPanel.setInputEnabled(true)
                 }
@@ -297,17 +290,16 @@ class ChatController(
                     LOG.error("Error during chat: ${e.message}", e)
                     chatPanel.showError(e.message ?: "Unknown error occurred")
                 }
-                .collect { response ->
-                    val token = response.message.content
+                .collect { token ->
                     responseBuilder.append(token)
                     chatPanel.appendToken(token)
                 }
-                
+
         } catch (e: CancellationException) {
             throw e  // Re-throw cancellation
         } catch (e: Exception) {
             LOG.error("Failed to send chat request: ${e.message}", e)
-            chatPanel.showError(e.message ?: "Failed to communicate with Ollama")
+            chatPanel.showError(e.message ?: "Failed to communicate with LLM provider")
             isProcessing = false
             chatPanel.setInputEnabled(true)
         }
@@ -320,13 +312,40 @@ class ChatController(
     /**
      * Builds a system prompt enriched with current context.
      */
-    private fun buildContextualSystemPrompt(settings: SidekickSettings): String {
+    private fun buildContextualSystemPrompt(settings: SidekickSettings, userMessage: String = ""): String {
         return try {
             val editorService = EditorContextService.getInstance(project)
             val projectService = ProjectContextService.getInstance(project)
             
             val contextBuilder = ContextBuilder.fromProject(editorService, projectService)
                 .standardChat()
+            
+            // Codebase search: find files relevant to the user's query (v1.0.6)
+            if (userMessage.isNotBlank()) {
+                try {
+                    val searchService = CodebaseSearchService.getInstance(project)
+                    var searchResults = searchService.search(userMessage)
+                    
+                    // IF NO RESULTS: Expand query with synonyms (v1.0.7)
+                    if (searchResults.isEmpty()) {
+                        LOG.info("No direct matches for '$userMessage' — attempting query expansion")
+                        val synonyms = expandQueryWithLLM(settings, userMessage)
+                        if (synonyms.isNotEmpty()) {
+                            LOG.info("Expanded query with synonyms: $synonyms")
+                            // Re-run search with original query + synonyms
+                            val expandedQuery = "$userMessage ${synonyms.joinToString(" ")}"
+                            searchResults = searchService.search(expandedQuery)
+                        }
+                    }
+                    
+                    if (searchResults.isNotEmpty()) {
+                        LOG.info("Codebase search found ${searchResults.size} relevant files")
+                        contextBuilder.includeCodebaseSearch(searchResults)
+                    }
+                } catch (e: Exception) {
+                    LOG.debug("Codebase search failed: ${e.message}")
+                }
+            }
             
             // Start with user's base system prompt
             val basePrompt = settings.systemPrompt.ifEmpty {
@@ -351,6 +370,53 @@ class ChatController(
         }
     }
 
+    /**
+     * Asks the LLM for synonyms/related terms to expand the search query.
+     */
+    private fun expandQueryWithLLM(settings: SidekickSettings, query: String): List<String> {
+        // Quick fail if not configured
+        if (settings.defaultModel.isEmpty()) return emptyList()
+
+        return try {
+            val providerManager = getProviderManager()
+            val prompt = "You are a query semantic expander. The user is searching a codebase. Provide 3-5 single-word synonyms or related technical terms for the query: '$query'. For example, if user says 'magic', you might output 'mana spell ability'. If 'repo', output 'repository storage'. Output ONLY space-separated words. Do not ignore typos."
+
+            val request = UnifiedChatRequest(
+                model = settings.defaultModel,
+                messages = listOf(UnifiedMessage.user(prompt)),
+                systemPrompt = "Output ONLY space-separated words.",
+                temperature = 0.3f,
+                stream = false
+            )
+
+            // We need a blocking call here since we're inside the prompt builder.
+            val sb = StringBuilder()
+            kotlinx.coroutines.runBlocking {
+                try {
+                    val response = providerManager.chat(request)
+                    sb.append(response.content ?: "")
+                } catch (e: Exception) {
+                    LOG.warn("Failed to expand query: ${e.message}")
+                }
+            }
+
+            val expanded = sb.toString().trim()
+            if (expanded.isBlank()) return emptyList()
+
+            // Parse words
+            expanded.split(Regex("\\s+"))
+                .map { it.trim().lowercase() }
+                .filter { it.length >= 3 }
+                .take(5)
+
+        } catch (e: Exception) {
+            LOG.warn("Query expansion failed: ${e.message}")
+            emptyList()
+        }
+    }
+
+
+
     // -------------------------------------------------------------------------
     // Private Methods - Status Polling
     // -------------------------------------------------------------------------
@@ -369,16 +435,25 @@ class ChatController(
     
     /**
      * Updates the connection status in the UI.
+     * Checks all registered providers — CONNECTED if any provider is healthy.
      */
     private suspend fun updateConnectionStatus() {
         try {
-            val service = getOllamaService()
-            val status = service.getConnectionStatus()
+            val providerManager = getProviderManager()
+            val healthMap = providerManager.checkAllHealth()
+
+            val anyHealthy = healthMap.values.any { it.healthy }
+            val status = when {
+                anyHealthy -> ConnectionStatus.CONNECTED
+                healthMap.isNotEmpty() -> ConnectionStatus.DISCONNECTED
+                else -> ConnectionStatus.NOT_CONFIGURED
+            }
+
             chatPanel.updateConnectionStatus(status)
-            
+
             // Refresh models when connection transitions to CONNECTED
             if (status == ConnectionStatus.CONNECTED && previousConnectionStatus != ConnectionStatus.CONNECTED) {
-                LOG.info("Connection established — refreshing model list")
+                LOG.info("Provider connection established — refreshing model list")
                 onConnected?.invoke()
             }
             previousConnectionStatus = status

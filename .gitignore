@@ -9,6 +9,8 @@
 # Gradle Build Output
 # ------------------------------------------------------------
 build/
+build 2/
+build 3/
 .gradle/
 out/
 

@@ -16,17 +16,14 @@
 
 package com.sidekick.generation.errorexplain
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.sidekick.context.EditorContextService
-import com.sidekick.services.ollama.OllamaService
-import com.sidekick.services.ollama.models.ChatMessage
-import com.sidekick.services.ollama.models.ChatOptions
-import com.sidekick.services.ollama.models.ChatRequest
+import com.sidekick.llm.provider.ProviderManager
+import com.sidekick.llm.provider.UnifiedChatRequest
+import com.sidekick.llm.provider.UnifiedMessage
 import com.sidekick.settings.SidekickSettings
-import kotlinx.coroutines.flow.toList
 
 /**
  * Service for explaining error messages.
@@ -183,29 +180,20 @@ class ErrorExplainService(private val project: Project) {
     }
 
     private suspend fun callLLM(prompt: String): String {
-        val ollamaService = ApplicationManager.getApplication()
-            .getService(OllamaService::class.java)
+        val providerManager = ProviderManager.getInstance()
         val settings = SidekickSettings.getInstance()
-        
-        val messages = listOf(
-            ChatMessage.system("You are an expert programming assistant explaining errors. Reply only with JSON, no markdown."),
-            ChatMessage.user(prompt)
-        )
-        
-        val options = ChatOptions(
-            temperature = 0.3,
-            numPredict = 600
-        )
-        
-        val request = ChatRequest(
+
+        val request = UnifiedChatRequest(
             model = settings.defaultModel.ifEmpty { "llama3.2" },
-            messages = messages,
-            stream = false,
-            options = options
+            messages = listOf(UnifiedMessage.user(prompt)),
+            systemPrompt = "You are an expert programming assistant explaining errors. Reply only with JSON, no markdown.",
+            temperature = 0.3f,
+            maxTokens = 600,
+            stream = false
         )
-        
-        val responses = ollamaService.chat(request).toList()
-        return responses.joinToString("") { it.message.content }
+
+        val response = providerManager.chat(request)
+        return response.content ?: ""
     }
 
     private fun parseResponse(response: String, errorContext: ErrorContext): ErrorExplanation {

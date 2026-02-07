@@ -9,83 +9,122 @@
 // DESIGN NOTES:
 // - Uses IntelliJ's Kotlin UI DSL for declarative UI building
 // - Implements Configurable for integration with IDE settings
-// - Provides connection testing functionality
-// - Loads available models from Ollama for dropdown selection
+// - Provides connection testing for all providers via ProviderManager
+// - Unified settings for Ollama and LM Studio on the same page
 // =============================================================================
 
 package com.sidekick.settings
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.Messages
 import com.intellij.ui.dsl.builder.*
 import com.sidekick.core.SidekickBundle
-import com.sidekick.services.ollama.OllamaService
+import com.sidekick.llm.lmstudio.LmStudioConfig
+import com.sidekick.llm.lmstudio.LmStudioService
+import com.sidekick.llm.provider.ProviderManager
+import com.sidekick.llm.provider.ProviderType
 import kotlinx.coroutines.*
 
 /**
  * Configurable settings panel for the Sidekick plugin.
  *
  * Creates the UI that appears in IDE preferences under Tools → Sidekick.
- * Handles saving and loading settings, and provides connection testing.
+ * Handles saving and loading settings, and provides connection testing
+ * for all registered LLM providers.
  */
 class SidekickConfigurable : BoundConfigurable(
     SidekickBundle.message("settings.title")
 ) {
-    
+
     companion object {
         private val LOG = Logger.getInstance(SidekickConfigurable::class.java)
     }
 
     // -------------------------------------------------------------------------
-    // Settings Reference
+    // Settings References
     // -------------------------------------------------------------------------
-    
+
     private val settings = SidekickSettings.getInstance()
-    
+    private val lmStudioService = LmStudioService.getInstance()
+
+    // Mutable copies for LM Studio URL binding (combined host:port → URL)
+    private var lmStudioUrl: String
+        get() {
+            val config = lmStudioService.config
+            return "http://${config.host}:${config.port}"
+        }
+        set(value) {
+            // Parse URL into host and port
+            val parsed = parseUrl(value)
+            val newConfig = LmStudioConfig(
+                host = parsed.first,
+                port = parsed.second,
+                autoConnect = lmStudioService.config.autoConnect,
+                autoDiscover = lmStudioService.config.autoDiscover,
+                connectionTimeoutMs = lmStudioService.config.connectionTimeoutMs,
+                requestTimeoutMs = lmStudioService.config.requestTimeoutMs
+            )
+            lmStudioService.updateConfig(newConfig)
+        }
+
     // -------------------------------------------------------------------------
     // Coroutine Scope
     // -------------------------------------------------------------------------
-    
+
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     // -------------------------------------------------------------------------
     // Configurable Implementation
     // -------------------------------------------------------------------------
-    
+
     override fun createPanel(): DialogPanel {
         LOG.debug("Creating Sidekick settings panel")
-        
+
         return panel {
             // -----------------------------------------------------------------
             // Ollama Connection Section
             // -----------------------------------------------------------------
-            group(SidekickBundle.message("settings.group.ollama")) {
-                row(SidekickBundle.message("settings.ollama.url")) {
+            group("Ollama Connection") {
+                row("Server URL:") {
                     textField()
                         .bindText(settings::ollamaUrl)
                         .columns(COLUMNS_LARGE)
-                        .comment(SidekickBundle.message("settings.ollama.url.comment"))
+                        .comment("Default: http://localhost:11434")
                         .validationOnApply {
-                            if (it.text.isBlank()) {
-                                error("Server URL cannot be empty")
-                            } else if (!it.text.startsWith("http://") && !it.text.startsWith("https://")) {
-                                error("URL must start with http:// or https://")
-                            } else {
-                                null
-                            }
+                            validateUrl(it.text)
                         }
                 }
-                
+
                 row {
-                    button(SidekickBundle.message("settings.ollama.test")) {
-                        testConnection()
+                    button("Test Connection") {
+                        testProviderConnection(ProviderType.OLLAMA)
                     }
                 }
             }
-            
+
+            // -----------------------------------------------------------------
+            // LM Studio Connection Section
+            // -----------------------------------------------------------------
+            group("LM Studio Connection") {
+                row("Server URL:") {
+                    textField()
+                        .bindText(::lmStudioUrl)
+                        .columns(COLUMNS_LARGE)
+                        .comment("Default: http://localhost:1234")
+                        .validationOnApply {
+                            validateUrl(it.text)
+                        }
+                }
+
+                row {
+                    button("Test Connection") {
+                        testProviderConnection(ProviderType.LM_STUDIO)
+                    }
+                }
+            }
+
             // -----------------------------------------------------------------
             // Model Settings Section
             // -----------------------------------------------------------------
@@ -96,7 +135,7 @@ class SidekickConfigurable : BoundConfigurable(
                         .columns(COLUMNS_MEDIUM)
                         .comment("e.g., llama3.2, codellama, mistral")
                 }
-                
+
                 row(SidekickBundle.message("settings.model.temperature")) {
                     slider(0, 200, 10, 50)
                         .bindValue(
@@ -105,7 +144,7 @@ class SidekickConfigurable : BoundConfigurable(
                         )
                         .comment("0 = deterministic, 200 = very creative")
                 }
-                
+
                 row("Max Tokens:") {
                     intTextField(1..32768)
                         .bindIntText(settings::maxTokens)
@@ -113,7 +152,7 @@ class SidekickConfigurable : BoundConfigurable(
                         .comment("Maximum tokens to generate per response")
                 }
             }
-            
+
             // -----------------------------------------------------------------
             // Advanced Settings Section
             // -----------------------------------------------------------------
@@ -125,57 +164,62 @@ class SidekickConfigurable : BoundConfigurable(
                         .columns(COLUMNS_LARGE)
                         .comment("Optional system prompt prepended to all conversations")
                 }
-                
+
                 row {
                     checkBox("Enable streaming responses")
                         .bindSelected(settings::streamingEnabled)
                         .comment("Show response tokens as they're generated")
                 }
-                
+
                 row {
                     checkBox("Auto-connect on startup")
                         .bindSelected(settings::autoConnect)
-                        .comment("Automatically connect to Ollama when IDE starts")
+                        .comment("Automatically connect to providers when IDE starts")
                 }
             }
         }
     }
-    
+
     // -------------------------------------------------------------------------
     // Connection Testing
     // -------------------------------------------------------------------------
-    
+
     /**
-     * Tests the connection to the Ollama server.
+     * Tests the connection to a specific provider.
      */
-    private fun testConnection() {
-        LOG.info("Testing connection to Ollama...")
-        
+    private fun testProviderConnection(providerType: ProviderType) {
+        LOG.info("Testing connection to ${providerType.displayName}...")
+
         scope.launch {
             try {
-                val service = ApplicationManager.getApplication()
-                    .getService(OllamaService::class.java)
-                
-                // Configure with the current URL (may not be applied yet)
-                service.configure(settings.ollamaUrl)
-                
-                // Check connection
-                val status = service.getConnectionStatus()
-                
-                // Get model count for success message
-                val modelResult = service.listModels()
-                
+                val providerManager = ProviderManager.getInstance()
+                val provider = providerManager.getProvider(providerType)
+
+                if (provider == null) {
+                    withContext(Dispatchers.Main) {
+                        Messages.showWarningDialog(
+                            "${providerType.displayName} provider is not registered.",
+                            "Provider Not Found"
+                        )
+                    }
+                    return@launch
+                }
+
+                val health = provider.checkHealth()
+                val models = try { provider.listModels() } catch (_: Exception) { emptyList() }
+
                 withContext(Dispatchers.Main) {
-                    if (status == com.sidekick.services.ollama.models.ConnectionStatus.CONNECTED) {
-                        val modelCount = modelResult.getOrNull()?.size ?: 0
+                    if (health.healthy) {
                         Messages.showInfoMessage(
-                            "Successfully connected to Ollama!\n\nFound $modelCount model(s) available.",
+                            "Successfully connected to ${providerType.displayName}!\n\n" +
+                            "Found ${models.size} model(s) available.",
                             "Connection Successful"
                         )
                     } else {
                         Messages.showWarningDialog(
-                            "Could not connect to Ollama at:\n${settings.ollamaUrl}\n\n" +
-                            "Make sure Ollama is running and the URL is correct.",
+                            "Could not connect to ${providerType.displayName}.\n\n" +
+                            "Error: ${health.error ?: "Unknown error"}\n\n" +
+                            "Make sure the server is running and the URL is correct.",
                             "Connection Failed"
                         )
                     }
@@ -191,11 +235,40 @@ class SidekickConfigurable : BoundConfigurable(
             }
         }
     }
-    
+
+    // -------------------------------------------------------------------------
+    // Validation
+    // -------------------------------------------------------------------------
+
+    private fun validateUrl(url: String): com.intellij.openapi.ui.ValidationInfo? {
+        return if (url.isBlank()) {
+            com.intellij.openapi.ui.ValidationInfo("Server URL cannot be empty")
+        } else if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            com.intellij.openapi.ui.ValidationInfo("URL must start with http:// or https://")
+        } else {
+            null
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // URL Parsing
+    // -------------------------------------------------------------------------
+
+    private fun parseUrl(url: String): Pair<String, Int> {
+        return try {
+            val parsed = java.net.URL(url)
+            val host = parsed.host ?: "localhost"
+            val port = if (parsed.port > 0) parsed.port else 1234
+            host to port
+        } catch (_: Exception) {
+            "localhost" to 1234
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Lifecycle
     // -------------------------------------------------------------------------
-    
+
     override fun disposeUIResources() {
         super.disposeUIResources()
         scope.cancel()

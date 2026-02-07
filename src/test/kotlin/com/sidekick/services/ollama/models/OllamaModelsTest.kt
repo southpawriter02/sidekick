@@ -11,6 +11,7 @@
 
 package com.sidekick.services.ollama.models
 
+import com.sidekick.models.ConnectionStatus
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.*

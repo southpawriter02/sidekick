@@ -29,7 +29,7 @@ import com.intellij.ui.components.JBTextArea
 import com.intellij.util.ui.JBUI
 import com.sidekick.core.SidekickBundle
 import com.sidekick.core.SidekickIcons
-import com.sidekick.services.ollama.models.ConnectionStatus
+import com.sidekick.models.ConnectionStatus
 import java.awt.*
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent

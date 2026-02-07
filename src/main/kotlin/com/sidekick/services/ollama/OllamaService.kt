@@ -30,6 +30,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
+import com.sidekick.models.ConnectionStatus
 import com.sidekick.services.ollama.models.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex

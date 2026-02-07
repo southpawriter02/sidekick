@@ -220,30 +220,5 @@ data class ChatResponse(
 // =============================================================================
 // Connection Status
 // =============================================================================
-
-/**
- * Represents the current connection state to the Ollama server.
- *
- * Used by the UI to show connection health in the status indicator.
- */
-enum class ConnectionStatus {
-    /**
-     * No Ollama URL has been configured in settings.
-     */
-    NOT_CONFIGURED,
-    
-    /**
-     * Currently attempting to connect to Ollama.
-     */
-    CONNECTING,
-    
-    /**
-     * Successfully connected and Ollama is responding.
-     */
-    CONNECTED,
-    
-    /**
-     * Connection failed or Ollama is not responding.
-     */
-    DISCONNECTED
-}
+// ConnectionStatus enum has been moved to com.sidekick.models.ConnectionStatus
+// for provider-agnostic usage across the codebase.

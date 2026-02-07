@@ -3,7 +3,6 @@ package com.sidekick.llm.provider
 import com.intellij.openapi.components.*
 import com.intellij.openapi.diagnostic.Logger
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 
 /**
  * # Provider Manager
@@ -81,6 +80,13 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
     }
 
     /**
+     * Ensures providers are initialized before use.
+     */
+    private fun ensureInitialized() {
+        if (!initialized) initialize()
+    }
+
+    /**
      * Registers a provider.
      */
     fun registerProvider(provider: LlmProvider) {
@@ -103,6 +109,7 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
      * Gets the currently active provider.
      */
     fun getActiveProvider(): LlmProvider? {
+        ensureInitialized()
         val type = ProviderType.byName(state.activeProviderName) ?: ProviderType.OLLAMA
         return providers[type]
     }
@@ -111,6 +118,7 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
      * Sets the active provider.
      */
     fun setActiveProvider(type: ProviderType) {
+        ensureInitialized()
         if (type in providers) {
             state.activeProviderName = type.name
             logger.info("Active provider set to: ${type.displayName}")
@@ -120,22 +128,32 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
     /**
      * Gets a provider by type.
      */
-    fun getProvider(type: ProviderType): LlmProvider? = providers[type]
+    fun getProvider(type: ProviderType): LlmProvider? {
+        ensureInitialized()
+        return providers[type]
+    }
 
     /**
      * Gets all registered providers.
      */
-    fun getAllProviders(): List<LlmProvider> = providers.values.toList()
+    fun getAllProviders(): List<LlmProvider> {
+        ensureInitialized()
+        return providers.values.toList()
+    }
 
     /**
      * Gets all currently available providers.
      */
-    fun getAvailableProviders(): List<LlmProvider> = providers.values.filter { it.isAvailable }
+    fun getAvailableProviders(): List<LlmProvider> {
+        ensureInitialized()
+        return providers.values.filter { it.isAvailable }
+    }
 
     /**
      * Gets all enabled providers.
      */
     fun getEnabledProviders(): List<LlmProvider> {
+        ensureInitialized()
         return providers.entries
             .filter { state.providerConfigs[it.key.name] == true }
             .map { it.value }
@@ -149,6 +167,7 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
      * Gets the best available provider based on selection strategy.
      */
     suspend fun getBestAvailableProvider(): LlmProvider? {
+        ensureInitialized()
         val strategy = ProviderSelectionStrategy.valueOf(state.selectionStrategy)
 
         return when (strategy) {
@@ -179,6 +198,7 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
      * Checks health of all providers.
      */
     suspend fun checkAllHealth(): Map<ProviderType, ProviderHealth> {
+        ensureInitialized()
         return providers.mapValues { (_, provider) ->
             try {
                 provider.checkHealth()
@@ -196,6 +216,7 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
      * Sends a chat request to the active or best available provider.
      */
     suspend fun chat(request: UnifiedChatRequest): UnifiedChatResponse {
+        ensureInitialized()
         val provider = getActiveProvider() ?: getBestAvailableProvider()
             ?: throw ProviderException("No providers available")
 
@@ -207,7 +228,7 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
      */
     fun streamChat(request: UnifiedChatRequest): Flow<String> {
         val provider = getActiveProvider()
-            ?: return emptyFlow()
+            ?: throw ProviderException("No active provider configured")
 
         return provider.streamChat(request)
     }
@@ -216,6 +237,7 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
      * Generates embeddings.
      */
     suspend fun embed(text: String): List<Float> {
+        ensureInitialized()
         val provider = getActiveProvider() ?: getBestAvailableProvider()
             ?: throw ProviderException("No providers available")
 
@@ -226,6 +248,7 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
      * Lists all models from all providers.
      */
     suspend fun listAllModels(): List<UnifiedModel> {
+        ensureInitialized()
         return providers.values.flatMap { provider ->
             try {
                 provider.listModels()
@@ -240,6 +263,7 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
      * Lists models from available providers only.
      */
     suspend fun listAvailableModels(): List<UnifiedModel> {
+        ensureInitialized()
         return getAvailableProviders().flatMap { provider ->
             try {
                 provider.listModels()

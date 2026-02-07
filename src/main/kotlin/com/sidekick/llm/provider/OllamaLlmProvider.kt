@@ -1,7 +1,16 @@
 package com.sidekick.llm.provider
 
+import com.intellij.openapi.application.ApplicationManager
+import com.sidekick.services.ollama.OllamaService
+import com.sidekick.models.ConnectionStatus
+import com.sidekick.settings.SidekickSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import com.sidekick.services.ollama.models.ChatMessage as OllamaChatMessage
+import com.sidekick.services.ollama.models.ChatOptions as OllamaChatOptions
+import com.sidekick.services.ollama.models.ChatRequest as OllamaChatRequest
 
 /**
  * # Ollama LLM Provider
@@ -49,6 +58,18 @@ class OllamaLlmProvider : LlmProvider {
 
     fun updateConfig(newConfig: OllamaConfig) {
         config = newConfig
+    }
+
+    /**
+     * Gets the OllamaService and ensures it is configured with the current settings URL.
+     * OllamaService.configure() is idempotent — it skips if the URL hasn't changed.
+     */
+    private suspend fun ensureServiceConfigured(): OllamaService {
+        val service = ApplicationManager.getApplication()
+            .getService(OllamaService::class.java)
+        val settings = SidekickSettings.getInstance()
+        service.configure(settings.ollamaUrl)
+        return service
     }
 
     // =========================================================================
@@ -149,8 +170,31 @@ class OllamaLlmProvider : LlmProvider {
     }
 
     override fun streamChat(request: UnifiedChatRequest): Flow<String> {
-        // Streaming implementation would use chunked response parsing
-        return emptyFlow()
+        val service = ApplicationManager.getApplication()
+            .getService(OllamaService::class.java)
+
+        val messages = request.allMessages.map { msg ->
+            OllamaChatMessage(
+                role = msg.role.toApiString(),
+                content = msg.content
+            )
+        }
+
+        val options = OllamaChatOptions(
+            temperature = request.temperature.toDouble(),
+            numPredict = request.maxTokens
+        )
+
+        val ollamaRequest = OllamaChatRequest(
+            model = request.model,
+            messages = messages,
+            stream = true,
+            options = options
+        )
+
+        return service.chat(ollamaRequest)
+            .map { response -> response.message.content }
+            .filter { it.isNotEmpty() }
     }
 
     private fun buildOllamaChatRequest(request: UnifiedChatRequest): String {
@@ -222,22 +266,16 @@ class OllamaLlmProvider : LlmProvider {
     override suspend fun checkHealth(): ProviderHealth {
         return try {
             val startTime = System.currentTimeMillis()
-            val url = java.net.URL("${config.baseUrl}/api/tags")
-            val connection = url.openConnection() as java.net.HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.connectTimeout = 2000
-
-            val healthy = connection.responseCode == 200
+            val service = ensureServiceConfigured()
+            val status = service.getConnectionStatus()
             val latency = System.currentTimeMillis() - startTime
 
-            connection.disconnect()
-
-            lastHealthCheck = if (healthy) {
+            lastHealthCheck = if (status == ConnectionStatus.CONNECTED) {
                 connected = true
                 ProviderHealth.healthy(latency)
             } else {
                 connected = false
-                ProviderHealth.unhealthy("HTTP ${connection.responseCode}")
+                ProviderHealth.unhealthy("Ollama not connected")
             }
 
             lastHealthCheck!!

@@ -86,6 +86,25 @@ The IntelliJ Platform uses this file to:
     Version history shown in the plugin details.
     -->
     <change-notes><![CDATA[
+        <h3>v1.1.0 - Multi-Provider Unification</h3>
+        <ul>
+            <li><strong>True multi-backend support:</strong> Chat, streaming, and model selection now use
+                the unified ProviderManager instead of being hardcoded to Ollama. LM Studio works
+                independently — shutting down Ollama no longer disconnects LM Studio.</li>
+            <li><strong>Unified settings page:</strong> Ollama and LM Studio connection settings are now
+                side-by-side on a single settings page with consistent URL fields and test buttons.</li>
+            <li><strong>Provider-aware model selector:</strong> The model dropdown lists models from all
+                connected providers, prefixed with the provider name (e.g., "Ollama: llama3.2").
+                Selecting a model automatically switches the active provider.</li>
+            <li><strong>Multi-provider health monitoring:</strong> Status shows "Connected" if any provider
+                is healthy, so losing one backend doesn't disrupt your workflow.</li>
+            <li><strong>All generation services migrated:</strong> Doc generation, test generation, commit
+                messages, naming suggestions, error explanations, and DTO generation all use
+                ProviderManager — they work with whichever backend is available.</li>
+            <li><strong>Shared ConnectionStatus:</strong> Moved to <code>com.sidekick.models</code> package
+                for clean cross-module usage.</li>
+        </ul>
+
         <h3>v0.1.0 - Initial Release</h3>
         <ul>
             <li>Plugin skeleton and core infrastructure</li>
@@ -176,28 +195,37 @@ The IntelliJ Platform uses this file to:
             displayName="Sidekick"/>
         
         <!--
-        LM Studio Settings (v0.8.1).
-        Nested under Sidekick settings for LM Studio server configuration.
+        LM Studio Settings: Merged into main Sidekick settings page (v1.1.0).
+        LM Studio connection is now configured alongside Ollama on the main page.
         -->
-        <applicationConfigurable
-            parentId="com.sidekick.settings"
-            instance="com.sidekick.llm.lmstudio.LmStudioSettingsConfigurable"
-            id="com.sidekick.lmstudio.settings"
-            displayName="LM Studio"/>
-        
+
         <!--
         LM Studio Service (v0.8.1).
         Application-level service for LM Studio OpenAI-compatible API integration.
         -->
-        <applicationService 
+        <applicationService
             serviceImplementation="com.sidekick.llm.lmstudio.LmStudioService"/>
-        
+
+        <!--
+        Provider Manager (v0.8.2).
+        Application-level service for multi-provider LLM abstraction.
+        -->
+        <applicationService
+            serviceImplementation="com.sidekick.llm.provider.ProviderManager"/>
+
         <!--
         Editor Context Service (v0.2.1).
         Extracts context from the current editor (file, selection, cursor).
         -->
         <projectService 
             serviceImplementation="com.sidekick.context.EditorContextService"/>
+        
+        <!--
+        Codebase Search Service (v1.0.6).
+        Keyword-based search across project source files for LLM context.
+        -->
+        <projectService
+            serviceImplementation="com.sidekick.context.CodebaseSearchService"/>
         
         <!--
         Project Context Service (v0.2.1).

@@ -84,6 +84,7 @@ class ContextBuilder(
     private var includeProjectSummary = false
     private var includeSurroundingCode = false
     private var surroundingLines = 10
+    private var searchResults: List<CodebaseSearchService.SearchResult> = emptyList()
 
     // -------------------------------------------------------------------------
     // Builder Methods
@@ -151,6 +152,14 @@ class ContextBuilder(
     }
     
     /**
+     * Includes codebase search results.
+     */
+    fun includeCodebaseSearch(results: List<CodebaseSearchService.SearchResult>): ContextBuilder {
+        searchResults = results
+        return this
+    }
+    
+    /**
      * Standard context for chat messages.
      */
     fun standardChat(): ContextBuilder {
@@ -200,6 +209,11 @@ class ContextBuilder(
         // Full file content (if explicitly requested and no selection)
         if (includeFileContent && editorContext.hasFile && !editorContext.hasSelection) {
             sections.add(buildFileContentSection())
+        }
+        
+        // Codebase search results
+        if (searchResults.isNotEmpty()) {
+            sections.add(buildCodebaseSearchSection())
         }
         
         if (sections.isEmpty()) {
@@ -334,6 +348,20 @@ class ContextBuilder(
                 append("\n// ... (truncated, ${content.length} chars total)")
             }
             append("\n```")
+        }
+    }
+    
+    private fun buildCodebaseSearchSection(): String {
+        return buildString {
+            append("### Relevant Project Files\n\n")
+            append("The following source files from the project may be relevant:\n")
+            
+            for (result in searchResults) {
+                append("\n#### `${result.fileName}` (`${result.filePath}`)\n")
+                append("```${result.language}\n")
+                append(result.snippet)
+                append("\n```\n")
+            }
         }
     }
 }

@@ -109,7 +109,7 @@ class ChatController(
     /**
      * Currently selected model name.
      */
-    private var selectedModel: String = DEFAULT_MODEL
+    internal var selectedModel: String = DEFAULT_MODEL
     
     /**
      * Whether a chat request is currently in progress.

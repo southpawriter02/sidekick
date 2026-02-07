@@ -17,11 +17,13 @@
 
 package com.sidekick.ui
 
+import com.intellij.icons.AllIcons
+import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
 import java.awt.*
-import javax.swing.JPanel
-import javax.swing.JTextPane
+import java.awt.datatransfer.StringSelection
+import javax.swing.*
 import javax.swing.text.SimpleAttributeSet
 import javax.swing.text.StyleConstants
 
@@ -37,8 +39,8 @@ import javax.swing.text.StyleConstants
  */
 class MessageBubble(
     initialText: String,
-    private val isUser: Boolean,
-    private val isError: Boolean = false
+    internal val isUser: Boolean,
+    internal val isError: Boolean = false
 ) : JPanel() {
 
     companion object {
@@ -103,6 +105,23 @@ class MessageBubble(
     /**
      * Content panel that holds the text pane with a rounded background.
      */
+    /**
+     * "Copy as Markdown" button, shown after streaming completes.
+     * Hidden by default; revealed by [markComplete].
+     *
+     * @since 1.1.1
+     */
+    private val copyButton = JButton(AllIcons.Actions.Copy).apply {
+        toolTipText = "Copy as Markdown"
+        isBorderPainted = false
+        isContentAreaFilled = false
+        isFocusPainted = false
+        cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+        isVisible = false  // hidden until markComplete()
+        preferredSize = Dimension(24, 24)
+        addActionListener { copyAsMarkdown() }
+    }
+
     private val contentPanel = object : JPanel(BorderLayout()) {
         override fun paintComponent(g: Graphics) {
             val g2 = g as Graphics2D
@@ -118,6 +137,13 @@ class MessageBubble(
     }.apply {
         isOpaque = false
         add(textPane, BorderLayout.CENTER)
+
+        // Bottom bar with the copy button, right-aligned
+        val bottomBar = JPanel(FlowLayout(FlowLayout.RIGHT, 4, 0)).apply {
+            isOpaque = false
+            add(copyButton)
+        }
+        add(bottomBar, BorderLayout.SOUTH)
     }
 
     // -------------------------------------------------------------------------
@@ -163,20 +189,52 @@ class MessageBubble(
     }
     
     /**
-     * Marks the message as complete (no visual change currently).
-     * Can be used to trigger any finalization logic.
+     * Marks the message as complete.
+     *
+     * Reveals the "Copy as Markdown" button so users can copy the
+     * fully-streamed response to the clipboard.
+     *
+     * @since 1.1.1
      */
     fun markComplete() {
-        // Currently no-op, but could be used to:
-        // - Parse markdown
-        // - Add timestamp
-        // - Enable copy button
+        copyButton.isVisible = true
+        revalidate()
+        repaint()
     }
     
     /**
      * Gets the full message text.
      */
     fun getText(): String = textPane.text
+
+    /**
+     * Creates an [ExportableMessage] DTO from this bubble's state.
+     *
+     * @since 1.1.1
+     */
+    fun toExportableMessage(): ExportableMessage =
+        ExportableMessage(text = getText(), isUser = isUser, isError = isError)
+
+    // -------------------------------------------------------------------------
+    // Clipboard Copy (v1.1.1)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Formats the bubble's content as Markdown and copies it to the clipboard.
+     * Shows a brief tooltip confirmation.
+     */
+    private fun copyAsMarkdown() {
+        val markdown = ChatExportService.formatSingleMessage(getText(), isUser, isError)
+        CopyPasteManager.getInstance().setContents(StringSelection(markdown))
+
+        // Flash the tooltip as confirmation
+        val original = copyButton.toolTipText
+        copyButton.toolTipText = "Copied!"
+        Timer(1500) { copyButton.toolTipText = original }.apply {
+            isRepeats = false
+            start()
+        }
+    }
 
     // -------------------------------------------------------------------------
     // Helper Methods

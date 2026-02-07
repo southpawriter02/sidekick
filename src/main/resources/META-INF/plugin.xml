@@ -86,6 +86,14 @@ The IntelliJ Platform uses this file to:
     Version history shown in the plugin details.
     -->
     <change-notes><![CDATA[
+        <h3>v1.1.1 - Chat Export to Markdown</h3>
+        <ul>
+            <li><strong>Per-bubble copy:</strong> Each chat bubble now has a "Copy as Markdown"
+                button that copies that message to your clipboard in clean Markdown format.</li>
+            <li><strong>Full conversation export:</strong> The new Export button in the chat toolbar
+                lets you save the entire conversation as a .md file with project and model metadata.</li>
+        </ul>
+
         <h3>v1.1.0 - Multi-Provider Unification</h3>
         <ul>
             <li><strong>True multi-backend support:</strong> Chat, streaming, and model selection now use
@@ -821,6 +829,17 @@ The IntelliJ Platform uses this file to:
                 class="com.sidekick.visual.git.SelectHeatmapSchemeAction"
                 text="Sidekick: Select Heatmap Scheme"
                 description="Choose color scheme for git heatmap">
+            <add-to-group group-id="Sidekick.ActionGroup"/>
+        </action>
+        
+        <!--
+        Chat Export (v1.1.1).
+        Export conversation as Markdown.
+        -->
+        <action id="Sidekick.ExportChat"
+                class="com.sidekick.ui.ExportChatAction"
+                text="Sidekick: Export Chat as Markdown"
+                description="Export the current chat conversation as a Markdown file">
             <add-to-group group-id="Sidekick.ActionGroup"/>
         </action>
     </actions>

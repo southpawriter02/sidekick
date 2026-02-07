@@ -18,8 +18,11 @@
 
 package com.sidekick.ui
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.fileChooser.FileChooserFactory
+import com.intellij.openapi.fileChooser.FileSaverDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.JBColor
@@ -185,10 +188,22 @@ class ChatPanel(
                 icon = SidekickIcons.SIDEKICK
             }
             
-            // Right side panel with model selector and status
+            // Export button (v1.1.1)
+            val exportButton = JButton(AllIcons.ToolbarDecorator.Export).apply {
+                toolTipText = SidekickBundle.message("chat.export.tooltip")
+                isBorderPainted = false
+                isContentAreaFilled = false
+                isFocusPainted = false
+                cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+                addActionListener { exportConversation() }
+            }
+            
+            // Right side panel with export, model selector, and status
             val rightPanel = JPanel().apply {
                 layout = BoxLayout(this, BoxLayout.X_AXIS)
                 isOpaque = false
+                add(exportButton)
+                add(Box.createHorizontalStrut(8))
                 add(modelSelector)
                 add(Box.createHorizontalStrut(12))
                 add(statusLabel)
@@ -429,6 +444,58 @@ class ChatPanel(
         SwingUtilities.invokeLater {
             val scrollBar = scrollPane.verticalScrollBar
             scrollBar.value = scrollBar.maximum
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Chat Export (v1.1.1)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Collects all [MessageBubble] components from the message list.
+     */
+    fun getMessageBubbles(): List<MessageBubble> {
+        return messageListPanel.components.filterIsInstance<MessageBubble>()
+    }
+
+    /**
+     * Exports the entire conversation as a Markdown file.
+     *
+     * Opens a file-save dialog, formats all messages via [ChatExportService],
+     * and writes the result to the chosen file.
+     *
+     * @since 1.1.1
+     */
+    private fun exportConversation() {
+        val bubbles = getMessageBubbles()
+        if (bubbles.isEmpty()) {
+            LOG.debug("No messages to export")
+            return
+        }
+
+        val messages = bubbles.map { it.toExportableMessage() }
+        val markdown = ChatExportService.formatConversation(
+            messages = messages,
+            projectName = project.name,
+            modelName = controller.selectedModel
+        )
+
+        // Show file save dialog
+        val descriptor = FileSaverDescriptor(
+            SidekickBundle.message("chat.export.title"),
+            SidekickBundle.message("chat.export.tooltip"),
+            "md"
+        )
+        val saveDialog = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project)
+        val wrapper = saveDialog.save(project.basePath?.let { java.nio.file.Path.of(it) }, "sidekick-chat-export.md")
+
+        if (wrapper != null) {
+            try {
+                wrapper.getFile().writeText(markdown)
+                LOG.info("Conversation exported to ${wrapper.getFile().absolutePath}")
+            } catch (e: Exception) {
+                LOG.error("Failed to export conversation", e)
+            }
         }
     }
 

@@ -8,6 +8,7 @@
 // - Default model selection
 // - Generation parameters (temperature, max tokens, etc.)
 // - UI preferences
+// - Agent approval policy
 //
 // DESIGN NOTES:
 // - Application-level settings (shared across all projects)
@@ -118,7 +119,13 @@ class SidekickSettings : PersistentStateComponent<SidekickSettings.State> {
         /**
          * Whether to auto-connect on plugin startup.
          */
-        var autoConnect: Boolean = true
+        var autoConnect: Boolean = true,
+
+        /**
+         * Agent approval policy for code changes.
+         * One of: ALWAYS_PROCEED, AGENT_DECIDES, REQUEST_REVIEW
+         */
+        var agentApprovalPolicy: String = "AGENT_DECIDES"
     )
 
     // -------------------------------------------------------------------------
@@ -238,6 +245,18 @@ class SidekickSettings : PersistentStateComponent<SidekickSettings.State> {
         set(value) {
             if (state.autoConnect != value) {
                 state.autoConnect = value
+                notifyListeners()
+            }
+        }
+
+    /**
+     * The agent approval policy for code changes.
+     */
+    var agentApprovalPolicy: String
+        get() = state.agentApprovalPolicy
+        set(value) {
+            if (state.agentApprovalPolicy != value) {
+                state.agentApprovalPolicy = value
                 notifyListeners()
             }
         }

@@ -3,6 +3,7 @@ package com.sidekick.agent.tasks
 import java.time.Instant
 import java.util.UUID
 import com.sidekick.security.TaskFileScope
+import com.sidekick.agent.diff.DiffReviewRequest
 
 /**
  * # Agent Task Models
@@ -604,6 +605,12 @@ sealed class TaskEvent {
     data class TaskFailed(
         override val taskId: String,
         val error: String,
+        override val timestamp: Instant = Instant.now()
+    ) : TaskEvent()
+
+    data class DiffReviewRequested(
+        override val taskId: String,
+        val request: DiffReviewRequest,
         override val timestamp: Instant = Instant.now()
     ) : TaskEvent()
 }

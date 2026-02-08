@@ -8,6 +8,8 @@
 
 ### 1. **Inline Diff Preview for Agent Edits**
 
+COMPLETED
+
 The agent system can propose code changes, but there's no visual diff preview before application. Add a side-by-side or unified diff panel (like Rider's built-in diff viewer) that lets the user inspect, cherry-pick hunks, and approve/reject individual changes before they're applied.
 
 - **Why now:** The agent executor (`AgentExecutor.kt`) already has tool-call results — surface them visually.

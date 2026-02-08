@@ -3,6 +3,7 @@ package com.sidekick.agent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.sidekick.agent.diff.*
 import com.sidekick.agent.tasks.*
 import com.sidekick.agent.tools.AgentTool as AgentToolDef
 import com.sidekick.agent.tools.BuiltInTools
@@ -11,6 +12,7 @@ import com.sidekick.llm.provider.*
 import com.sidekick.security.TaskFileScope
 import com.sidekick.security.TaskScopedFileAccess
 import com.sidekick.security.SecurityConfig
+import com.sidekick.settings.SidekickSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.time.Instant
@@ -71,6 +73,12 @@ class AgentExecutor(private val project: Project) {
 
     // Available tools
     private val tools: List<AgentToolDef> = BuiltInTools.ALL
+
+    // Diff preview service for generating diffs before applying changes
+    private val diffPreviewService = DiffPreviewService()
+
+    // Pending review requests awaiting user decision
+    private val pendingReviews = mutableMapOf<String, DiffReviewRequest>()
 
     // Event listeners
     private val eventListeners = mutableListOf<(TaskEvent) -> Unit>()
@@ -244,15 +252,10 @@ class AgentExecutor(private val project: Project) {
             }
         }
 
-        // Check for confirmation
-        if (constraints.requireConfirmation && tool.isDestructive) {
-            currentTask = currentTask?.withStatus(TaskStatus.AWAITING_CONFIRMATION)
-            emitEvent(TaskEvent.ConfirmationRequired(
-                currentTask?.id ?: "",
-                tool.name,
-                "Destructive action: ${tool.description}"
-            ))
-            // In real implementation, would await user confirmation
+        // Check for diff preview before executing file-modifying tools
+        if (toolName in listOf("write_file", "edit_file")) {
+            val reviewResult = handleDiffPreview(stepId, tool, arguments, constraints)
+            if (reviewResult != null) return reviewResult
         }
 
         // Execute tool
@@ -270,6 +273,98 @@ class AgentExecutor(private val project: Project) {
             TaskStep.error(stepId, "Tool error: ${e.message}")
         }
     }
+
+    /**
+     * Handles diff preview logic based on the current approval policy.
+     *
+     * @return A [TaskStep] if the tool call should be intercepted (review needed
+     *         or rejected), or null if execution should proceed normally.
+     */
+    private fun handleDiffPreview(
+        stepId: Int,
+        tool: AgentToolDef,
+        arguments: Map<String, Any>,
+        constraints: TaskConstraints
+    ): TaskStep? {
+        val policy = try {
+            ApprovalPolicy.valueOf(SidekickSettings.getInstance().agentApprovalPolicy)
+        } catch (e: Exception) {
+            ApprovalPolicy.DEFAULT
+        }
+
+        // ALWAYS_PROCEED → skip diff preview entirely
+        if (policy == ApprovalPolicy.ALWAYS_PROCEED) return null
+
+        // AGENT_DECIDES → only review destructive operations
+        if (policy == ApprovalPolicy.AGENT_DECIDES && !tool.isDestructive) return null
+
+        // Generate the diff
+        val filePath = arguments["path"] as? String ?: return null
+        val content = arguments["content"] as? String ?: return null
+
+        val fileChange = diffPreviewService.createFileChange(filePath, content)
+
+        // If no actual changes, proceed without review
+        if (fileChange.hunks.isEmpty()) return null
+
+        // Create review request and emit event
+        val reviewRequest = DiffReviewRequest(
+            taskId = currentTask?.id ?: "",
+            stepId = stepId,
+            changes = listOf(fileChange),
+            toolName = tool.name,
+            toolArgs = arguments
+        )
+
+        pendingReviews[reviewRequest.id] = reviewRequest
+
+        currentTask = currentTask?.withStatus(TaskStatus.AWAITING_CONFIRMATION)
+        emitEvent(TaskEvent.DiffReviewRequested(
+            currentTask?.id ?: "",
+            reviewRequest
+        ))
+
+        // Return a step indicating review is pending
+        return TaskStep.toolCall(
+            id = stepId,
+            toolName = tool.name,
+            toolArgs = arguments,
+            reasoning = "Awaiting diff review (policy: ${policy.displayName})",
+            result = "Diff review requested: ${reviewRequest.summary}",
+            success = true
+        )
+    }
+
+    /**
+     * Submits a user's diff review decision.
+     *
+     * If approved (fully or partially), applies the accepted changes.
+     * If rejected, the changes are discarded.
+     *
+     * @param decision The user's review decision
+     * @return The final content after applying the decision, or null if rejected
+     */
+    fun submitDiffReviewDecision(decision: DiffReviewDecision): String? {
+        val request = pendingReviews.remove(decision.requestId) ?: return null
+
+        if (decision.isFullRejection) {
+            logger.info("Diff review rejected: ${request.summary}")
+            return null
+        }
+
+        // Apply decision to each file change
+        val results = request.changes.map { change ->
+            diffPreviewService.applyDecision(change, decision)
+        }
+
+        logger.info("Diff review accepted (${if (decision.isPartialApproval) "partial" else "full"}): ${request.summary}")
+        return results.firstOrNull()
+    }
+
+    /**
+     * Gets all pending diff review requests.
+     */
+    fun getPendingReviews(): List<DiffReviewRequest> = pendingReviews.values.toList()
 
     /**
      * Gets tools available for a task based on constraints.

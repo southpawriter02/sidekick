@@ -42,6 +42,7 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
     private var state = State()
     private val providers = mutableMapOf<ProviderType, LlmProvider>()
     private var initialized = false
+    private val rateLimiter = RateLimiter(RateLimitConfig.DEFAULT)
 
     companion object {
         /**
@@ -214,9 +215,11 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
 
     /**
      * Sends a chat request to the active or best available provider.
+     * Acquires a rate limit permit before making the request.
      */
     suspend fun chat(request: UnifiedChatRequest): UnifiedChatResponse {
         ensureInitialized()
+        rateLimiter.acquire()
         val provider = getActiveProvider() ?: getBestAvailableProvider()
             ?: throw ProviderException("No providers available")
 
@@ -225,8 +228,10 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
 
     /**
      * Streams a chat request.
+     * Acquires a rate limit permit before the stream begins.
      */
-    fun streamChat(request: UnifiedChatRequest): Flow<String> {
+    suspend fun streamChat(request: UnifiedChatRequest): Flow<String> {
+        rateLimiter.acquire()
         val provider = getActiveProvider()
             ?: throw ProviderException("No active provider configured")
 
@@ -235,9 +240,11 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
 
     /**
      * Generates embeddings.
+     * Acquires a rate limit permit before making the request.
      */
     suspend fun embed(text: String): List<Float> {
         ensureInitialized()
+        rateLimiter.acquire()
         val provider = getActiveProvider() ?: getBestAvailableProvider()
             ?: throw ProviderException("No providers available")
 
@@ -310,6 +317,35 @@ class ProviderManager : PersistentStateComponent<ProviderManager.State> {
      */
     fun getSelectionStrategy(): ProviderSelectionStrategy {
         return ProviderSelectionStrategy.valueOf(state.selectionStrategy)
+    }
+
+    // =========================================================================
+    // Rate Limiting
+    // =========================================================================
+
+    /**
+     * Updates the rate limiter configuration. Takes effect immediately.
+     */
+    fun updateRateLimitConfig(config: RateLimitConfig) {
+        rateLimiter.updateConfig(config)
+        logger.info("Rate limit config updated: ${config.maxRequestsPerMinute} rpm")
+    }
+
+    /**
+     * Gets the current rate limiter statistics.
+     */
+    fun getRateLimitStats(): RateLimitStats = rateLimiter.getStats()
+
+    /**
+     * Gets the current rate limit configuration.
+     */
+    fun getRateLimitConfig(): RateLimitConfig = rateLimiter.getConfig()
+
+    /**
+     * Resets rate limiter state (counters, window).
+     */
+    fun resetRateLimiter() {
+        rateLimiter.reset()
     }
 }
 

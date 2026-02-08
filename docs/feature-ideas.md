@@ -100,6 +100,8 @@ Build a persistent "Task History" panel (like a mini CI dashboard) showing past 
 
 ### 11. **Rate-Limited LLM Requests**
 
+COMPLETED
+
 There is no rate limiting on chat or agent requests. A tight loop (e.g., agent self-correction retries) could saturate the local LLM. Add configurable per-minute request caps with exponential back-off.
 
 - **Why now:** The self-correction system (`agent/correction/`) can retry indefinitely.

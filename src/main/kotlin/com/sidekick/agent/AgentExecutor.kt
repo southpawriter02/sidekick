@@ -8,6 +8,9 @@ import com.sidekick.agent.tools.AgentTool as AgentToolDef
 import com.sidekick.agent.tools.BuiltInTools
 import com.sidekick.agent.tools.ToolCallRequest as ToolsCallRequest
 import com.sidekick.llm.provider.*
+import com.sidekick.security.TaskFileScope
+import com.sidekick.security.TaskScopedFileAccess
+import com.sidekick.security.SecurityConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.time.Instant
@@ -90,6 +93,11 @@ class AgentExecutor(private val project: Project) {
         currentTask = task.withStatus(TaskStatus.PLANNING)
         emitEvent(TaskEvent.TaskStarted(task.id, task))
 
+        // Auto-scope file access to project root if not explicitly set
+        val fileScope = task.constraints.fileScope
+            ?: TaskFileScope.forProject(task.context.projectPath)
+        val scopedAccess = TaskScopedFileAccess(fileScope)
+
         return try {
             // Get provider
             val provider = ProviderManager.getInstance().getActiveProvider()
@@ -133,7 +141,7 @@ class AgentExecutor(private val project: Project) {
 
                     val stepStart = System.currentTimeMillis()
                     val parsedArgs = toolCall.parseArguments()
-                    val step = executeToolCall(stepCount, toolCall.name, parsedArgs, task.constraints)
+                    val step = executeToolCall(stepCount, toolCall.name, parsedArgs, task.constraints, scopedAccess)
                     val stepDuration = System.currentTimeMillis() - stepStart
 
                     steps.add(step.copy(durationMs = stepDuration))
@@ -194,7 +202,8 @@ class AgentExecutor(private val project: Project) {
         stepId: Int,
         toolName: String,
         arguments: Map<String, Any>,
-        constraints: TaskConstraints
+        constraints: TaskConstraints,
+        scopedAccess: TaskScopedFileAccess? = null
     ): TaskStep {
         val tool = BuiltInTools.findByName(toolName)
             ?: return TaskStep.error(stepId, "Unknown tool: $toolName")
@@ -206,6 +215,33 @@ class AgentExecutor(private val project: Project) {
 
         if (tool.name == "run_command" && !constraints.allowCommands) {
             return TaskStep.error(stepId, "Command execution not allowed")
+        }
+
+        // Validate file paths against task scope
+        if (scopedAccess != null) {
+            val pathArg = arguments["path"] as? String
+            val cwdArg = arguments["cwd"] as? String
+
+            if (pathArg != null) {
+                val isWrite = tool.isDestructive
+                val accessResult = scopedAccess.validateAccess(pathArg, isWrite)
+                if (!accessResult.valid) {
+                    return TaskStep.error(
+                        stepId,
+                        "File access blocked by task scope: ${accessResult.issues.joinToString { it.description }}"
+                    )
+                }
+            }
+
+            if (cwdArg != null) {
+                val cwdResult = scopedAccess.validateCommandWorkingDir(cwdArg)
+                if (!cwdResult.valid) {
+                    return TaskStep.error(
+                        stepId,
+                        "Working directory blocked by task scope: ${cwdResult.issues.joinToString { it.description }}"
+                    )
+                }
+            }
         }
 
         // Check for confirmation

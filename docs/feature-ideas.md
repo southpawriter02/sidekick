@@ -118,6 +118,8 @@ Add a lightweight scanner that checks user input for common prompt injection pat
 
 ### 13. **Scoped File Access per Agent Task**
 
+COMPLETED
+
 Currently `SecurityConfig.restrictedPaths` is global. Introduce per-task file access scoping where the agent can only read/write files within the project root or explicitly approved directories for the duration of a single task.
 
 - **Why now:** A malicious model response could instruct the agent to read `~/.ssh/` — per-task scoping limits blast radius.

@@ -2,6 +2,7 @@ package com.sidekick.agent.tasks
 
 import java.time.Instant
 import java.util.UUID
+import com.sidekick.security.TaskFileScope
 
 /**
  * # Agent Task Models
@@ -280,6 +281,7 @@ data class TaskContext(
  * @property allowCommands Allow running shell commands
  * @property requireConfirmation Require user confirmation
  * @property timeoutSeconds Task timeout
+ * @property fileScope Per-task file access scope (null = auto-scope to project root)
  */
 data class TaskConstraints(
     val maxSteps: Int = 10,
@@ -289,7 +291,8 @@ data class TaskConstraints(
     val allowDeletion: Boolean = false,
     val allowCommands: Boolean = false,
     val requireConfirmation: Boolean = true,
-    val timeoutSeconds: Int = 300
+    val timeoutSeconds: Int = 300,
+    val fileScope: TaskFileScope? = null
 ) {
     /**
      * Whether any file operations are allowed.

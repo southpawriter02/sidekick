@@ -180,6 +180,212 @@ data class SecurityConfig(
             requireConfirmation = ConfirmationLevel.NONE
         )
     }
+    /**
+     * Creates a SecurityConfig layered with per-task file scope restrictions.
+     *
+     * Merges the task scope's denied directories into restrictedPaths so that
+     * both global and per-task restrictions are enforced together.
+     *
+     * @param scope The task-scoped file access boundary
+     * @return A new SecurityConfig with additional restrictions from the scope
+     */
+    fun withTaskScope(scope: TaskFileScope): SecurityConfig {
+        return copy(
+            restrictedPaths = restrictedPaths + scope.effectiveRestrictedPaths()
+        )
+    }
+}
+
+// =============================================================================
+// Task File Scope
+// =============================================================================
+
+/**
+ * Defines the file access boundary for a single agent task.
+ *
+ * Confines the agent to the project root directory (and any explicitly
+ * approved additional directories) for the duration of one task execution.
+ * This limits blast radius if a malicious model response attempts to access
+ * sensitive files like `~/.ssh/` or `/etc/passwd`.
+ *
+ * ## Security Model
+ * - All paths are canonicalized before checking to prevent traversal attacks
+ * - Sensitive directories (`.ssh`, `.gnupg`, `.aws`, etc.) are always denied
+ * - The scope is *additive* on top of global [SecurityConfig] restrictions
+ *
+ * ## Usage
+ * ```kotlin
+ * val scope = TaskFileScope(
+ *     projectRoot = "/home/user/project",
+ *     allowedDirectories = setOf("/home/user/.gradle")
+ * )
+ * scope.isPathAllowed("/home/user/project/src/Main.kt")  // true
+ * scope.isPathAllowed("/home/user/.ssh/id_rsa")           // false
+ * ```
+ *
+ * @property projectRoot Canonical path to the project root directory
+ * @property allowedDirectories Additional directories the task may access
+ * @property denyPatterns Path suffixes/segments that are always denied
+ * @property readOnly Whether the scope only permits read operations
+ */
+data class TaskFileScope(
+    val projectRoot: String,
+    val allowedDirectories: Set<String> = emptySet(),
+    val denyPatterns: Set<String> = DEFAULT_DENY_PATTERNS,
+    val readOnly: Boolean = false
+) {
+    /**
+     * Checks if the given absolute path is within the task scope.
+     *
+     * The path is canonicalized to resolve symlinks and `..` segments,
+     * then verified against the project root and allowed directories.
+     * Sensitive deny patterns are always checked.
+     *
+     * @param absolutePath The absolute file path to check
+     * @return true if the path is allowed by this scope
+     */
+    fun isPathAllowed(absolutePath: String): Boolean {
+        val canonical = try {
+            java.io.File(absolutePath).canonicalPath
+        } catch (e: Exception) {
+            return false // Cannot resolve → deny
+        }
+
+        // Always deny sensitive patterns
+        if (matchesDenyPattern(canonical)) return false
+
+        // Check project root
+        if (canonical.startsWith(canonicalProjectRoot)) return true
+
+        // Check additional allowed directories
+        return allowedDirectories.any { dir ->
+            val canonicalDir = try {
+                java.io.File(dir).canonicalPath
+            } catch (e: Exception) {
+                return@any false
+            }
+            canonical.startsWith(canonicalDir)
+        }
+    }
+
+    /**
+     * Checks if a write operation is allowed for the given path.
+     *
+     * @param absolutePath The absolute file path to check
+     * @return true if writing is permitted
+     */
+    fun isWriteAllowed(absolutePath: String): Boolean {
+        return !readOnly && isPathAllowed(absolutePath)
+    }
+
+    /**
+     * Returns a copy with an additional allowed directory.
+     *
+     * @param directory The directory to add to the allowed set
+     * @return New scope with the directory added
+     */
+    fun withAdditionalDirectory(directory: String): TaskFileScope {
+        return copy(allowedDirectories = allowedDirectories + directory)
+    }
+
+    /**
+     * Gets the set of restricted paths that this scope implies,
+     * for merging into a [SecurityConfig].
+     *
+     * Returns the sensitive directory paths based on deny patterns.
+     */
+    fun effectiveRestrictedPaths(): Set<String> {
+        val home = System.getProperty("user.home") ?: return emptySet()
+        return SENSITIVE_DIRECTORIES.map { "$home/$it" }.toSet()
+    }
+
+    /**
+     * Validates the scope configuration.
+     *
+     * @return List of validation issues, empty if valid
+     */
+    fun validate(): List<String> {
+        val issues = mutableListOf<String>()
+        if (projectRoot.isBlank()) {
+            issues.add("projectRoot must not be blank")
+        }
+        val rootFile = java.io.File(projectRoot)
+        if (!rootFile.isAbsolute) {
+            issues.add("projectRoot must be an absolute path")
+        }
+        allowedDirectories.forEach { dir ->
+            if (!java.io.File(dir).isAbsolute) {
+                issues.add("allowedDirectory must be absolute: $dir")
+            }
+        }
+        return issues
+    }
+
+    // Cached canonical project root for performance
+    private val canonicalProjectRoot: String by lazy {
+        try {
+            java.io.File(projectRoot).canonicalPath
+        } catch (e: Exception) {
+            projectRoot
+        }
+    }
+
+    /**
+     * Checks if a canonical path matches any deny pattern.
+     */
+    private fun matchesDenyPattern(canonicalPath: String): Boolean {
+        return denyPatterns.any { pattern ->
+            canonicalPath.contains("/$pattern/") ||
+                canonicalPath.endsWith("/$pattern")
+        }
+    }
+
+    companion object {
+        /**
+         * Sensitive directory names that are always denied regardless of scope.
+         */
+        val SENSITIVE_DIRECTORIES = setOf(
+            ".ssh",
+            ".gnupg",
+            ".gpg",
+            ".aws",
+            ".azure",
+            ".gcloud",
+            ".config/gcloud",
+            ".docker",
+            ".kube",
+            ".npmrc",
+            ".pypirc",
+            ".netrc",
+            ".env",
+            ".credentials"
+        )
+
+        /**
+         * Default deny patterns — path segments that are always blocked.
+         */
+        val DEFAULT_DENY_PATTERNS: Set<String> = SENSITIVE_DIRECTORIES
+
+        /**
+         * Creates a scope rooted at the given project path with default settings.
+         *
+         * @param projectRoot Absolute path to the project root
+         * @return A new task file scope
+         */
+        fun forProject(projectRoot: String): TaskFileScope {
+            return TaskFileScope(projectRoot = projectRoot)
+        }
+
+        /**
+         * Creates a read-only scope (agent can read but not write).
+         *
+         * @param projectRoot Absolute path to the project root
+         * @return A new read-only task file scope
+         */
+        fun readOnly(projectRoot: String): TaskFileScope {
+            return TaskFileScope(projectRoot = projectRoot, readOnly = true)
+        }
+    }
 }
 
 // =============================================================================

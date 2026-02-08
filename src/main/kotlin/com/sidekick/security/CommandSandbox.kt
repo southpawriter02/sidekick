@@ -160,9 +160,10 @@ class CommandSandbox {
      *
      * @param command The full command string to validate
      * @param workingDir The directory where the command would execute
+     * @param taskScope Optional per-task file scope for working directory validation
      * @return Validation result with any security issues found
      */
-    fun validateCommand(command: String, workingDir: String): ValidationResult {
+    fun validateCommand(command: String, workingDir: String, taskScope: TaskFileScope? = null): ValidationResult {
         val issues = mutableListOf<SecurityIssue>()
 
         // Check for dangerous patterns (always block)
@@ -198,6 +199,14 @@ class CommandSandbox {
             issues.add(SecurityIssue.high(
                 "restricted_path",
                 "Working directory is in restricted area"
+            ))
+        }
+
+        // Check task scope for working directory
+        if (taskScope != null && !taskScope.isPathAllowed(File(workingDir).absolutePath)) {
+            issues.add(SecurityIssue.high(
+                "cwd_out_of_scope",
+                "Working directory is outside the task scope (project root: ${taskScope.projectRoot})"
             ))
         }
 
@@ -257,9 +266,10 @@ class CommandSandbox {
      *
      * @param path The file path to validate
      * @param write Whether this is a write operation
+     * @param taskScope Optional per-task file scope for boundary validation
      * @return Validation result with any security issues found
      */
-    fun validateFileAccess(path: String, write: Boolean): ValidationResult {
+    fun validateFileAccess(path: String, write: Boolean, taskScope: TaskFileScope? = null): ValidationResult {
         val issues = mutableListOf<SecurityIssue>()
         val file = File(path)
 
@@ -273,6 +283,22 @@ class CommandSandbox {
                 SecurityEventType.PATH_TRAVERSAL_ATTEMPT,
                 "Path traversal detected: ${path.take(50)}",
                 mapOf("path" to path.take(100))
+            ))
+        }
+
+        // Check task scope boundary
+        if (taskScope != null && !taskScope.isPathAllowed(file.absolutePath)) {
+            issues.add(SecurityIssue.high(
+                "out_of_scope",
+                "Path is outside the task scope (project root: ${taskScope.projectRoot})"
+            ))
+        }
+
+        // Check write permission against task scope
+        if (write && taskScope != null && !taskScope.isWriteAllowed(file.absolutePath)) {
+            issues.add(SecurityIssue.high(
+                "write_denied",
+                "Write access denied in the current task scope"
             ))
         }
 
